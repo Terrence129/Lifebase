@@ -7,4 +7,5 @@
 3. 本地优先、隐私优先；不提交任何密钥。
 4. 每个方案必须标注 **Build / Reuse / Integrate / Defer**。
 5. 用户是唯一开发者，Agent 默认顾问角色：未经批准不要写实现代码。
-6. 完整规格见 `docs/context.md`。
+6. git 提交禁止任何 AI 署名（Co-Authored-By 等），贡献者只能是用户本人。
+7. 完整规格见 `docs/context.md`。
