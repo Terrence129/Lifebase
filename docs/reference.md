@@ -9,7 +9,7 @@
 LifeSync   → 采集：Collectors / Adapters / Importers / Data Inbox
 LifeVault  → 存储：不可变 RAW（Bronze）+ 规范化（Silver）+ 派生（Gold）
 LifeGraph  → 知识：Entities / Events / Evidence Fusion / 时间语义
-HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（Month 12+ 才开始）
+HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（长期规划，尚未实现）
 ```
 
 数据流：`Collector → RAW → Normalizer → Canonical records`。四层职责严格分离，不要跨层写代码；Collector 不直接写应用数据库。
@@ -17,7 +17,44 @@ HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（Month 12+ 才
 ## 2. 项目背景与当前阶段
 
 - **定位**：local-first 个人数据基础设施 —— 持续采集、保存、规范化分散在微信、照片、GPS、邮件、ChatGPT、GitHub、银行等处的数字生活痕迹，形成有证据支撑、带时间语义的个人知识图谱（LifeGraph），并在此之上构建个人 AI 应用（HumanOS）。「Own your data first. Intelligence comes later.」项目以个人开源项目为第一定位，商业化暂缓，不得影响当前架构。
-- **当前阶段（2026-10 快照，可能过期，以代码为准）**：首个 Weekend Prototype 已完成合成数据验收：手动 Data Inbox + 不可变 RAW archive + ChatGPT ZIP collector + canonical v1 + Parquet + DuckDB + ingest/list/query CLI。用户的官方导出尚在生成，真实格式兼容性待本地验证。
+
+### 当前阶段
+
+更新日期：**2026-10-05**。当前处于首条 ChatGPT 导入链路的原型与可靠性验证阶段；
+以下完成状态以现有实现、合成测试及本地验收为依据，不代表真实官方导出已通过验收。
+
+| 分类 | 已完成内容 | 验收与记录 |
+| --- | --- | --- |
+| Reuse（conda、uv、pytest、ruff） | 专用开发环境、依赖声明与锁文件、CI 检查流程 | 环境同步说明见 [README](../README.md#开发环境)，决策见 [ADR-005](adr/ADR-005-conda开发环境与uv依赖锁定.md) |
+| Build | canonical v1 的 Event / Artifact / Evidence 契约、合成样例、来源与时间语义 | 保留分支和内容版本，现有 Envelope 未改；见 [契约](design/chatgpt-minimal-contract-draft.md) |
+| Build + Reuse（hashlib、SQLite、PyArrow、DuckDB） | 不可变 RAW 归档、ChatGPT ZIP collector、Parquet、可追溯只读查询及 ingest/list/query | 合成端到端验收覆盖哈希、十次导入幂等、重叠导出、账户隔离和证据回溯；见 [ADR-007](adr/ADR-007-RAW归档与Silver快照发布.md) |
+| Build + Reuse（sqlite3、zipfile、PyArrow） | verify：只读检查 RAW、索引、Silver 和证据引用 | 缺失、损坏及未登记产物能定位；合成测试验证检查不改写数据；见 [ADR-008](adr/ADR-008-只读完整性检查.md) |
+| Build + Reuse（已有 collector、SQLite、PyArrow） | rebuild：仅凭 RAW 与 manifest 重建派生数据；query 显式筛选来源与处理版本 | 保留首次入库时间，完整产物复用，损坏产物不覆盖；见 [ADR-009](adr/ADR-009-RAW重放与处理版本选择.md) |
+| Build + Reuse（DuckDB、pytest、Python 标准库） | quality：导入与汇总质量统计；合成规模工具与基线 | 区分身份、版本、缺失时间及不支持内容；三档规模各运行三次，见 [基线](benchmarks/README.md) 与 [ADR-010](adr/ADR-010-导入质量报告与合成规模基线.md) |
+
+最近本地验证（2026-10-05）：`uv run ruff check .` 通过，`uv run pytest` **84 项全绿**。
+CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录本地结果，不声称已核对
+每次远端 CI 运行。完整规模基准按需执行，CI 仅运行小样例正确性检查。
+
+### 待验证事项与阻塞
+
+- **真实导出兼容性待验证**：尚未进行本地真实 ChatGPT 官方 ZIP 验收。用户此前报告
+  官方导出正在生成；该验收需等待可用文件，合成测试不能替代。
+- **格式覆盖有限**：目前解析 ZIP 根目录唯一的 conversations.json 数组；编号会话
+  文件、加密 ZIP 与非文本内容理解尚不支持。
+- **规模边界**：query / quality 当前将选中 Parquet 分区载入内存。已有基线仅覆盖
+  合成输入，真实导出、更长正文、媒体密集数据及更多快照的资源消耗仍待验证。
+- **恢复边界**：rebuild 依赖完整 RAW 和 manifest；不修复损坏文件，也不等同于备份恢复。
+
+### 下一步与暂缓范围（未执行）
+
+| 分类 | 后续工作 | 理由与完成条件 |
+| --- | --- | --- |
+| Build + Reuse（现有 CLI、collector、pytest） | 官方导出到达后，在仓库外验证 ingest → verify → quality → query → rebuild | 用真实格式检验当前映射；保留 RAW，核对首次入库时间与重建逻辑结果，进度记录仅保存计数和问题类型 |
+| Build + Reuse（pytest、合成 fixture） | 按真实验收发现的问题修正解析器并补充合成回归样例 | 根据实际失败扩展格式覆盖；同处理版本逻辑变化需按既有版本设计处理；没有发现问题前不预先扩展实现 |
+| Reuse（restic） | 后续单独评估备份与恢复验收 | RAW 重放解决派生数据重建，原始证据的备份恢复仍需独立验证；目前尚未集成 |
+| Integrate | 本阶段尚未接入外部服务 | Nango 仅为待评估候选，待多个 OAuth 来源产生实际维护成本后再评估 |
+| Defer | 自动监听、多平台、媒体理解、LifeGraph、LLM 与 HumanOS UI | 优先完成首条来源的真实兼容性和可靠性验证，再扩大范围 |
 
 ## 3. 既定设计决策（未经用户同意，不得重新讨论）
 

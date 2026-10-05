@@ -14,8 +14,14 @@ LifeSync（采集）→ LifeVault（不可变存储）→ LifeGraph（知识图�
 
 ## 当前状态
 
-首个 **Weekend Prototype** 已打通合成数据链路：ChatGPT ZIP → RAW 归档 →
-canonical v1 → Parquet → DuckDB 查询。真实官方导出的兼容性待本地验收。
+截至 **2026-10-05**，首个原型已完成合成数据链路及可靠性验收：ChatGPT ZIP →
+RAW 归档 → canonical v1 → Parquet → DuckDB 查询；已实现
+`ingest`、`list`、`query`、`verify`、`rebuild`、`quality` 六个 CLI 命令。
+
+本地 ruff 检查通过，84 项测试全绿；已记录 1,000 / 10,000 / 50,000 基础消息的
+合成规模基线。真实官方导出兼容性尚未验收；多平台、自动监听、LifeGraph 和
+HumanOS 尚未实现。完整进度、待验证事项与下一步见
+[当前阶段](docs/reference.md#2-项目背景与当前阶段)。
 
 ## 快速开始
 

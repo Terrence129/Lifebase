@@ -40,8 +40,8 @@
 | 约束 | 验证方式 |
 | --- | --- |
 | 原始数据不入 git | 提交前 `git status` 不含个人数据；`.gitignore` 覆盖 `data/` `inbox/` `*.db` `*.parquet` `.env` |
-| RAW 不可变 | vault 读回 hash 校验（必测，待纳入 CI） |
-| Collector 幂等 | 同一 fixture 导入两次产物一致（必测，待纳入 CI） |
+| RAW 不可变 | vault 读回 hash 校验（必测，已由 pytest 覆盖并纳入 CI） |
+| Collector 幂等 | 同一 fixture 重复导入产物一致（必测，已覆盖十次导入并纳入 CI） |
 | 不跨层写代码 | `graph/`、`humanos/` 当前禁止写代码；`vault/` 不 import `graph/` |
 | 测试数据合成 | `tests/fixtures/` 仅含合成、脱敏数据 |
 | 不提交密钥 | `.env` 已 gitignore |
@@ -73,6 +73,7 @@ CI（`.github/workflows/ci.yml`）在 push / PR 时执行同样两项。
 5. 挑战不必要的复杂性；避免过早的基础设施复杂度。
 6. 按「数据生命周期几十年」设计 schema 演进：RAW 永不变，schema/parser 版本化，派生数据可弃。
 7. 保守处理敏感个人数据与第三方数据。
+8. **及时同步开发进度**：完成里程碑、调整任务范围或发现/解除阻塞后，须在任务收尾前更新项目进度文档（当前为 `docs/reference.md` 的「当前阶段」），注明更新日期、已完成内容、待验证事项、阻塞及下一步；同步相关 README 摘要，区分已实现能力与规划，过时描述须更新或标注为历史背景，不得只在聊天中记录进度。
 
 ## 6. 技术栈约定
 

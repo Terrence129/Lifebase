@@ -1,5 +1,9 @@
 # Project Context
 
+> 本文保留项目发起时的背景、架构构想与长期路线图；月份目标是初始规划，不表示
+> 当前完成度或交付承诺。最新开发进度见 [reference.md 的当前阶段](reference.md#2-项目背景与当前阶段)，
+> 项目约束见 [AGENTS.md](../AGENTS.md)。本页第 34 节为历史快照。
+
 > 命名更新（2026-10-05）：项目伞形名称为 **Lifebase**（包名 `lifebase`、CLI 命令 `lifebase`）；四层 LifeSync / LifeVault / LifeGraph / HumanOS 名称不变；数据根目录为 `~/Lifebase/`。下文已同步更新系统级名称，其余「LifeSync」字样均指采集层（详见仓库 ADR-002）。
 
 ## 1. Project Overview
@@ -1540,9 +1544,9 @@ AI clone
 
 > **Version control + database + search engine + knowledge graph + AI interface for a human life.**
 
-# 34. Current Project Position
+# 34. Initial Project Position（历史快照）
 
-当前项目处于：
+项目发起时处于：
 
 ```
 Concept
@@ -1552,9 +1556,9 @@ Architecture exploration
 Project initiation
 ```
 
-尚未正式进入大规模 coding。
+当时尚未正式进入大规模 coding；该描述不代表当前开发状态。
 
-当前最需要解决的是：
+当时最需要解决的是：
 
 ```
 Collector architecture
