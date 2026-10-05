@@ -40,15 +40,17 @@
 | 约束 | 验证方式 |
 | --- | --- |
 | 原始数据不入 git | 提交前 `git status` 不含个人数据；`.gitignore` 覆盖 `data/` `inbox/` `*.db` `*.parquet` `.env` |
-| RAW 不可变 | vault 读回 hash 校验（必测，已由 pytest 覆盖并纳入 CI） |
-| Collector 幂等 | 同一 fixture 重复导入产物一致（必测，已覆盖十次导入并纳入 CI） |
+| RAW 不可变 | vault 读回 hash 校验（涉及相关代码改动时必测，已由 pytest 覆盖并纳入 CI） |
+| Collector 幂等 | 同一 fixture 重复导入产物一致（涉及相关代码改动时必测，已覆盖十次导入并纳入 CI） |
 | 不跨层写代码 | `graph/`、`humanos/` 当前禁止写代码；`vault/` 不 import `graph/` |
 | 测试数据合成 | `tests/fixtures/` 仅含合成、脱敏数据 |
 | 不提交密钥 | `.env` 已 gitignore |
 
 ## 4. 收工前校验与完成定义（DoD）
 
-收工前本地校验：
+**按实际改动决定校验范围**：仅研究、答疑、文档或约束编辑等未改动代码的任务，不运行 `ruff`、`pytest`，只核对相关内容与差异；用户明确要求运行校验时除外。不得为了满足收工流程而无条件运行测试。
+
+改动代码的任务，收工前运行本地校验：
 
 ```bash
 uv run ruff check .
@@ -59,7 +61,7 @@ CI（`.github/workflows/ci.yml`）在 push / PR 时执行同样两项。
 
 一个任务算完成，当且仅当：
 
-- [ ] `ruff` 无告警、`pytest` 全绿。
+- [ ] 改动代码时，`ruff` 无告警、`pytest` 全绿；未改动代码时，已核对相关内容与差异，无需运行两项校验。
 - [ ] 涉及数据路径的改动，附 hash 校验 / 幂等性验证。
 - [ ] 新的重要决策已写 ADR（`docs/adr/ADR-NNN-主题.md`）。
 - [ ] 未触碰红线与边界层（或已获用户批准）。
