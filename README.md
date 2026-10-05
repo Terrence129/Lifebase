@@ -106,6 +106,31 @@ lifebase query "SELECT a.role, a.text_parts, e.content_hash, e.raw_member, e.raw
 契约见 [canonical v1](docs/design/chatgpt-minimal-contract-draft.md)，具体行为由合成
 端到端测试覆盖。后续真实数据验证只在仓库外进行。
 
+### 只读完整性检查
+
+停止向数据目录写入后执行：
+
+```bash
+lifebase --data-dir ~/Lifebase-demo verify
+# 默认检查 ~/Lifebase
+lifebase verify
+```
+
+输出 JSON：`status`、`counts` 和 `issues`。检查包括 RAW 内容地址与归档长度、
+两个 SQLite 索引、全部已发布 Silver 分区的哈希/schema/行数/处理身份、规范化
+记录关联，以及证据的 ZIP 成员哈希、JSON Pointer 和来源记录 ID。问题包含稳定
+`code`、相对数据目录的 `path`，证据问题还包含 `evidence_id`；不输出消息正文。
+
+状态 `ok` 返回 0；错误返回 1。未登记的对象、分区和临时目录作为 `warning`
+报告，同样返回 1，供人工检查；不会修复、重新登记或清理。正常归档但解析失败的
+输入只检查归档完整性，解析失败原因仍由 `list` 查看。
+
+不存在的数据目录视为空库，返回 0 且不创建文件。为避免 SQLite 创建辅助文件或
+恢复日志，检查使用只读 immutable 连接；发现 WAL/恢复日志时返回
+`database_not_quiescent`，要求停止写入后重试。本版检查要求静止的数据目录，
+不提供并发写入期间的一致性快照。文件内容、mtime 和权限保持不变；操作系统
+可能因读取更新 atime。实现与边界见 [ADR-008](docs/adr/ADR-008-只读完整性检查.md)。
+
 ## 安全红线
 
 真实个人数据与密钥永不进入 git（数据只存本地，默认 `~/Lifebase/`）；本仓库只包含代码、schema、文档与合成测试数据。完整红线与规则以 [AGENTS.md](./AGENTS.md) 为唯一事实源。
