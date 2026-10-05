@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
+import tempfile
 import zipfile
 from dataclasses import asdict
 from pathlib import Path
@@ -22,6 +24,18 @@ from lifebase.vault.store import ObjectStore
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "chatgpt"
 SOURCE = "chatgpt:synthetic-account"
+
+
+def _symlink_supported() -> bool:
+    with tempfile.TemporaryDirectory() as directory:
+        try:
+            os.symlink("synthetic-target", str(Path(directory) / "synthetic-link"))
+        except (OSError, NotImplementedError):
+            return False
+    return True
+
+
+SYMLINKS = _symlink_supported()
 
 
 def snapshot(root: Path) -> dict[str, tuple[int, int, str | None]]:
@@ -243,6 +257,7 @@ def test_wal_database_is_refused_without_side_effects(tmp_path: Path) -> None:
         assert "database_not_quiescent" in codes(check_readonly(root))
 
 
+@pytest.mark.skipif(not SYMLINKS, reason="创建符号链接需要 Windows 开发者模式或管理员权限")
 def test_symlink_is_reported_without_reading_target(tmp_path: Path) -> None:
     root = tmp_path / "data"
     raw, _ = sample(root)

@@ -16,11 +16,13 @@ LifeSync（采集）→ LifeVault（不可变存储）→ LifeGraph（知识图�
 
 截至 **2026-10-05**，首个原型已完成合成数据链路及可靠性验收：ChatGPT ZIP →
 RAW 归档 → canonical v1 → Parquet → DuckDB 查询；已实现
-`ingest`、`list`、`query`、`verify`、`rebuild`、`quality` 六个 CLI 命令。
+`ingest`、`list`、`query`、`verify`、`rebuild`、`quality` 六个 CLI 命令，
+collector 经来源注册表（`sync/collectors/__init__.py`）路由，后续来源可扩展接入。
 
-本地 ruff 检查通过，84 项测试全绿；已记录 1,000 / 10,000 / 50,000 基础消息的
-合成规模基线。真实官方导出兼容性尚未验收；多平台、自动监听、LifeGraph 和
-HumanOS 尚未实现。完整进度、待验证事项与下一步见
+本地 ruff 检查通过；93 项测试中 Windows 原生（conda `lifebase` 环境）89 项通过、
+4 项符号链接测试因系统权限跳过，Linux/CI 执行全部 93 项。已记录 1,000 / 10,000 /
+50,000 基础消息的合成规模基线。真实官方导出兼容性尚未验收；多平台、自动监听、
+LifeGraph 和 HumanOS 尚未实现。完整进度、待验证事项与下一步见
 [当前阶段](docs/reference.md#2-项目背景与当前阶段)。
 
 ## 快速开始
@@ -57,6 +59,10 @@ conda 安装的工具包。
 这些文件不包含本机环境路径；conda 的底层系统包会按设备平台解析，并非逐字节复制
 整套环境。已有环境在拉取依赖变更后，重新执行 `uv sync --locked --extra dev --inexact`。
 有意升级依赖时执行 `uv lock --upgrade`，再同步并验证。
+
+若 `uv sync` 报证书错误（精简 conda 环境缺少 CA 证书），先 `pip install certifi`，
+再用 `conda env config vars set --name lifebase "SSL_CERT_FILE=<该环境 site-packages 下
+certifi/cacert.pem 路径>"` 持久化指向，重新激活后生效。
 
 ### 本地验证
 

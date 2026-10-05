@@ -31,8 +31,13 @@ HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（长期规划�
 | Build + Reuse（sqlite3、zipfile、PyArrow） | verify：只读检查 RAW、索引、Silver 和证据引用 | 缺失、损坏及未登记产物能定位；合成测试验证检查不改写数据；见 [ADR-008](adr/ADR-008-只读完整性检查.md) |
 | Build + Reuse（已有 collector、SQLite、PyArrow） | rebuild：仅凭 RAW 与 manifest 重建派生数据；query 显式筛选来源与处理版本 | 保留首次入库时间，完整产物复用，损坏产物不覆盖；见 [ADR-009](adr/ADR-009-RAW重放与处理版本选择.md) |
 | Build + Reuse（DuckDB、pytest、Python 标准库） | quality：导入与汇总质量统计；合成规模工具与基线 | 区分身份、版本、缺失时间及不支持内容；三档规模各运行三次，见 [基线](benchmarks/README.md) 与 [ADR-010](adr/ADR-010-导入质量报告与合成规模基线.md) |
+| Build + Reuse（现有 collector、CLI、pytest） | 来源注册表：`sync/collectors/__init__.py` 按 source_type 路由 collector（make_collector / metadata_for / detect_collector），pipeline / CLI / rebuild 不再硬编码 ChatGPTCollector | 行为不变；单 collector 时未知前缀回退，多 collector 时报错；9 项注册表测试覆盖，第二来源可插拔接入 |
 
-最近本地验证（2026-10-05）：`uv run ruff check .` 通过，`uv run pytest` **84 项全绿**。
+最近本地验证（2026-10-05，conda `lifebase` 环境，Windows 原生）：`uv run ruff check .`
+通过，`uv run pytest` **89 项通过、4 项跳过**（4 项符号链接测试因 Windows 无创建
+权限跳过，Linux/CI 上全量执行 93 项）。本次同步修复 Windows 原生兼容问题：vault
+发布时只读临时文件删除失败（`vault/store.py`）、测试 fixture 读取编码、符号链接
+测试跳过守卫；conda 环境补齐 certifi 后 `uv sync` 无需手动解除 SSL 变量。
 CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录本地结果，不声称已核对
 每次远端 CI 运行。完整规模基准按需执行，CI 仅运行小样例正确性检查。
 
@@ -71,7 +76,7 @@ CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录
 ## 4. 目录速查
 
 - `src/lifebase/core/` — 统一封装（envelope）、内容寻址（跨层）
-- `src/lifebase/sync/` — LifeSync 层：Collector 契约（base.py）、Source Registry（registry.py）、collectors/（当前只做 ChatGPT Export）
+- `src/lifebase/sync/` — LifeSync 层：Collector 契约（base.py）、Source Registry（registry.py）、collectors/（来源注册表 + ChatGPT Export）
 - `src/lifebase/vault/` — LifeVault 层：RAW 归档、manifest、silver/（规范化 Parquet）
 - `src/lifebase/graph/`、`src/lifebase/humanos/` — 边界占位，当前阶段禁止在此写代码
 - `schemas/` — JSON Schema，与代码同仓库同版本

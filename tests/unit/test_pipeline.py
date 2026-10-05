@@ -23,7 +23,7 @@ from lifebase.vault.store import ObjectStore
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "chatgpt"
 SOURCE = "chatgpt:synthetic-account"
-EXPECTED = json.loads((FIXTURES / "expectations.json").read_text())
+EXPECTED = json.loads((FIXTURES / "expectations.json").read_text(encoding="utf-8"))
 
 
 def select(root: Path, sql: str) -> list[tuple[Any, ...]]:
@@ -42,7 +42,7 @@ def write_export(path: Path, records: list[dict[str, Any]]) -> Path:
 
 
 def base_records() -> list[dict[str, Any]]:
-    return json.loads((FIXTURES / "export-a" / "conversations.json").read_text())
+    return json.loads((FIXTURES / "export-a" / "conversations.json").read_text(encoding="utf-8"))
 
 
 def test_ten_imports_do_not_change_any_persisted_product(tmp_path: Path) -> None:

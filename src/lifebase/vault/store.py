@@ -74,7 +74,6 @@ class ObjectStore:
             content_hash = digest.hexdigest()
             path = self.object_path(content_hash)
             path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-            temporary.chmod(0o400)
             try:
                 os.link(temporary, path)
                 created = True
@@ -86,6 +85,10 @@ class ObjectStore:
                         os.close(directory_fd)
             except FileExistsError:
                 created = False
+            # 先删临时名再设只读：hardlink 共享同一 inode，Windows 无法删除只读文件。
+            temporary.unlink(missing_ok=True)
+            temporary = None
+            path.chmod(0o400)
             self.verify(content_hash)
             return StoredObject(content_hash, size, path, created)
         finally:

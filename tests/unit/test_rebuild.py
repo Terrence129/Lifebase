@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
+import tempfile
 from dataclasses import asdict, replace
 from pathlib import Path
 
@@ -23,6 +25,18 @@ from lifebase.vault.store import ObjectStore
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "chatgpt"
 SOURCE = "chatgpt:synthetic-account"
+
+
+def _symlink_supported() -> bool:
+    with tempfile.TemporaryDirectory() as directory:
+        try:
+            os.symlink("synthetic-target", str(Path(directory) / "synthetic-link"))
+        except (OSError, NotImplementedError):
+            return False
+    return True
+
+
+SYMLINKS = _symlink_supported()
 
 
 def snapshot(root: Path) -> dict[str, tuple[int, int, str | None]]:
@@ -256,6 +270,7 @@ def test_manifest_wal_and_corrupt_index_stop_before_writing(tmp_path: Path) -> N
     assert snapshot(root) == before
 
 
+@pytest.mark.skipif(not SYMLINKS, reason="创建符号链接需要 Windows 开发者模式或管理员权限")
 def test_symlink_registry_is_not_written(tmp_path: Path) -> None:
     root = tmp_path / "data"
     sample(root)
@@ -270,6 +285,7 @@ def test_symlink_registry_is_not_written(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("kind", ["partition_metadata", "registry_journal"])
+@pytest.mark.skipif(not SYMLINKS, reason="创建符号链接需要 Windows 开发者模式或管理员权限")
 def test_symlink_metadata_and_database_auxiliary_paths_are_rejected(
     tmp_path: Path, kind: str,
 ) -> None:
