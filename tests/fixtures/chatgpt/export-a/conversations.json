@@ -1,0 +1,177 @@
+[
+  {
+    "id": "synthetic-conversation-1",
+    "title": "合成示例：准备野餐",
+    "create_time": 1767225600,
+    "update_time": 1767225720,
+    "current_node": "node-1-assistant-b",
+    "mapping": {
+      "node-1-root": {
+        "id": "node-1-root",
+        "message": null,
+        "parent": null,
+        "children": [
+          "node-1-user"
+        ]
+      },
+      "node-1-user": {
+        "id": "node-1-user",
+        "message": {
+          "id": "synthetic-message-1",
+          "author": {
+            "role": "user",
+            "name": null,
+            "metadata": {}
+          },
+          "create_time": 1767225600,
+          "update_time": 1767225600,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "帮我列一份野餐用品清单。"
+            ]
+          },
+          "status": "finished_successfully",
+          "end_turn": false,
+          "metadata": {
+            "fixture": "synthetic"
+          },
+          "recipient": "all"
+        },
+        "parent": "node-1-root",
+        "children": [
+          "node-1-assistant-a",
+          "node-1-assistant-b"
+        ]
+      },
+      "node-1-assistant-a": {
+        "id": "node-1-assistant-a",
+        "message": {
+          "id": "synthetic-message-2",
+          "author": {
+            "role": "assistant",
+            "name": null,
+            "metadata": {}
+          },
+          "create_time": 1767225660,
+          "update_time": 1767225660,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "可以准备水、点心和野餐垫。"
+            ]
+          },
+          "status": "finished_successfully",
+          "end_turn": true,
+          "metadata": {
+            "fixture": "synthetic"
+          },
+          "recipient": "all"
+        },
+        "parent": "node-1-user",
+        "children": []
+      },
+      "node-1-assistant-b": {
+        "id": "node-1-assistant-b",
+        "message": {
+          "id": "synthetic-message-3",
+          "author": {
+            "role": "assistant",
+            "name": null,
+            "metadata": {}
+          },
+          "create_time": 1767225720,
+          "update_time": 1767225720,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "可以准备水、点心和野餐垫。",
+              "出发前再检查天气。"
+            ]
+          },
+          "status": "finished_successfully",
+          "end_turn": true,
+          "metadata": {
+            "fixture": "synthetic"
+          },
+          "recipient": "all"
+        },
+        "parent": "node-1-user",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "synthetic-conversation-2",
+    "title": "合成示例：回忆与时间缺失",
+    "create_time": 1767312000,
+    "update_time": 1767312000,
+    "current_node": "node-2-assistant",
+    "mapping": {
+      "node-2-root": {
+        "id": "node-2-root",
+        "message": null,
+        "parent": null,
+        "children": [
+          "node-2-user"
+        ]
+      },
+      "node-2-user": {
+        "id": "node-2-user",
+        "message": {
+          "id": "synthetic-message-4",
+          "author": {
+            "role": "user",
+            "name": null,
+            "metadata": {}
+          },
+          "create_time": 1767312000,
+          "update_time": 1767312000,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "这是一段虚构回忆：我在2022年第一次学会做面包。"
+            ]
+          },
+          "status": "finished_successfully",
+          "end_turn": false,
+          "metadata": {
+            "fixture": "synthetic"
+          },
+          "recipient": "all"
+        },
+        "parent": "node-2-root",
+        "children": [
+          "node-2-assistant"
+        ]
+      },
+      "node-2-assistant": {
+        "id": "node-2-assistant",
+        "message": {
+          "id": "synthetic-message-5",
+          "author": {
+            "role": "assistant",
+            "name": null,
+            "metadata": {}
+          },
+          "create_time": null,
+          "update_time": null,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "这条回复故意缺少创建时间，用于测试空值处理。"
+            ]
+          },
+          "status": "finished_successfully",
+          "end_turn": true,
+          "metadata": {
+            "fixture": "synthetic"
+          },
+          "recipient": "all"
+        },
+        "parent": "node-2-user",
+        "children": []
+      }
+    }
+  }
+]

@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:lifebase:schema:evidence:v1",
+  "title": "Lifebase evidence v1",
+  "type": "object",
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "record_kind": {
+      "enum": [
+        "event",
+        "artifact"
+      ]
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "revision_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_record_id": {
+      "type": "string"
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "collector_version": {
+      "type": "string"
+    },
+    "parser_version": {
+      "type": "string"
+    },
+    "occurred_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "known_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ingested_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "valid_from": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "valid_to": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "raw_member": {
+      "type": "string"
+    },
+    "raw_member_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "raw_pointer": {
+      "type": "string",
+      "pattern": "^(/|$)"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "record_kind",
+    "record_id",
+    "revision_id",
+    "source",
+    "source_record_id",
+    "content_hash",
+    "collector_version",
+    "parser_version",
+    "occurred_at",
+    "known_at",
+    "ingested_at",
+    "valid_from",
+    "valid_to",
+    "raw_member",
+    "raw_member_hash",
+    "raw_pointer"
+  ],
+  "additionalProperties": false
+}

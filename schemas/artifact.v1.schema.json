@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:lifebase:schema:artifact:v1",
+  "title": "Lifebase artifact v1",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "revision_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "artifact_type": {
+      "type": "string"
+    },
+    "context_record_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "parent_record_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "content_format": {
+      "type": "string"
+    },
+    "text_parts": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "occurred_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "known_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "record_id",
+    "revision_id",
+    "schema_version",
+    "artifact_type",
+    "context_record_id",
+    "parent_record_id",
+    "role",
+    "content_format",
+    "text_parts",
+    "occurred_at",
+    "known_at"
+  ],
+  "additionalProperties": false
+}

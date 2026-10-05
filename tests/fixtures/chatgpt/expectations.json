@@ -1,0 +1,77 @@
+{
+  "status": "accepted canonical v1; synthetic end-to-end acceptance expectations",
+  "source_id": "chatgpt:synthetic-account",
+  "synthetic": true,
+  "archives": {
+    "export-a": {
+      "zip_sha256": "4343f91bd07018432999d29015e52f8b4e77b5c62e5d6bc06f1b2796d35f2fa4",
+      "member_sha256": "b65851330f1feeb455edb7e935aabada42c86d8266bcb03ea16adf4bf8e36db4",
+      "conversation_count": 2,
+      "message_count": 5
+    },
+    "export-b": {
+      "zip_sha256": "dcd357977d275e01eed0b4afb5583a65f1c6bc0f798c42fd2a90d9d5f667d213",
+      "member_sha256": "ae3527f3d9f31df3f6a15110dad761399e902d96321418185e46127a833d514e",
+      "conversation_count": 2,
+      "message_count": 6
+    }
+  },
+  "scenarios": {
+    "a_once": {
+      "raw_objects": 1,
+      "event_identities": 2,
+      "event_versions": 2,
+      "artifact_identities": 5,
+      "artifact_versions": 5,
+      "evidence_rows": 7
+    },
+    "a_ten_times": {
+      "raw_objects": 1,
+      "event_identities": 2,
+      "event_versions": 2,
+      "artifact_identities": 5,
+      "artifact_versions": 5,
+      "evidence_rows": 7
+    },
+    "a_then_b": {
+      "raw_objects": 2,
+      "event_identities": 2,
+      "event_versions": 3,
+      "artifact_identities": 6,
+      "artifact_versions": 7,
+      "evidence_rows": 15
+    },
+    "b_then_a": {
+      "raw_objects": 2,
+      "event_identities": 2,
+      "event_versions": 3,
+      "artifact_identities": 6,
+      "artifact_versions": 7,
+      "evidence_rows": 15
+    }
+  },
+  "checks": {
+    "all_branches_retained": [
+      "synthetic-message-2",
+      "synthetic-message-3"
+    ],
+    "null_message_roots_not_artifacts": [
+      "node-1-root",
+      "node-2-root"
+    ],
+    "missing_time_record": "synthetic-message-5",
+    "missing_time_expected": {
+      "occurred_at": null,
+      "known_at": null
+    },
+    "retrospective_record": "synthetic-message-4",
+    "retrospective_expected": {
+      "occurred_at": "2026-01-02T00:00:00Z",
+      "known_at": "2026-01-02T00:00:00Z"
+    },
+    "same_id_changed_content_record": "synthetic-message-2",
+    "revision_known_at_in_b": "2026-01-02T23:59:00Z",
+    "message_1_pointer_in_a": "/0/mapping/node-1-user/message",
+    "message_1_pointer_in_b": "/1/mapping/node-1-user/message"
+  }
+}
