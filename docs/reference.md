@@ -17,7 +17,7 @@ HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（Month 12+ 才
 ## 2. 项目背景与当前阶段
 
 - **定位**：local-first 个人数据基础设施 —— 持续采集、保存、规范化分散在微信、照片、GPS、邮件、ChatGPT、GitHub、银行等处的数字生活痕迹，形成有证据支撑、带时间语义的个人知识图谱（LifeGraph），并在此之上构建个人 AI 应用（HumanOS）。「Own your data first. Intelligence comes later.」项目以个人开源项目为第一定位，商业化暂缓，不得影响当前架构。
-- **当前阶段（2026-10 快照，可能过期，以代码为准）**：项目启动早期，尚未进入大规模 coding；第一个里程碑为 Weekend Prototype —— Data Inbox + RAW archive + 1 个 collector + Parquet + DuckDB + 基础 CLI 查询。
+- **当前阶段（2026-10 快照，可能过期，以代码为准）**：首个 Weekend Prototype 已完成合成数据验收：手动 Data Inbox + 不可变 RAW archive + ChatGPT ZIP collector + canonical v1 + Parquet + DuckDB + ingest/list/query CLI。用户的官方导出尚在生成，真实格式兼容性待本地验证。
 
 ## 3. 既定设计决策（未经用户同意，不得重新讨论）
 

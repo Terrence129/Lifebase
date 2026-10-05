@@ -14,7 +14,8 @@ LifeSync（采集）→ LifeVault（不可变存储）→ LifeGraph（知识图�
 
 ## 当前状态
 
-项目启动阶段。第一个里程碑：**Weekend Prototype** —— export.zip 丢进 inbox → 可查询数据。
+首个 **Weekend Prototype** 已打通合成数据链路：ChatGPT ZIP → RAW 归档 →
+canonical v1 → Parquet → DuckDB 查询。真实官方导出的兼容性待本地验收。
 
 ## 快速开始
 
@@ -58,7 +59,52 @@ uv run ruff check .
 uv run pytest
 ```
 
-CLI 目前仍是骨架，导入与查询功能待实现。
+### 导入与查询
+
+进入开发环境后，先用仓库内的合成样例试跑；输出目录放在仓库外：
+
+```bash
+lifebase --data-dir ~/Lifebase-demo ingest --source chatgpt:synthetic-account tests/fixtures/chatgpt/export-a.zip
+lifebase --data-dir ~/Lifebase-demo list
+lifebase --data-dir ~/Lifebase-demo query "SELECT role, text_parts, occurred_at FROM artifacts ORDER BY occurred_at"
+```
+
+再导入同一文件，结果显示 `unchanged`；导入 `export-b.zip` 可以验证重叠来源与内容版本。
+
+真实导出到达后，将 ZIP 放进 `~/Lifebase/inbox/`，执行：
+
+```bash
+lifebase ingest --source chatgpt:personal
+lifebase list
+lifebase query "SELECT count(DISTINCT record_id) AS messages FROM artifacts"
+```
+
+`--source` 必须区分不同账户，不填写密钥。未提供文件路径时手动扫描 inbox；原文件
+留在原处，RAW 内容归档到 `vault/objects/`，首次来源入库信息保存在
+`vault/manifest.sqlite`，Source Registry 位于 `registry.sqlite`。
+
+Silver 按来源、RAW 哈希与处理版本发布完整 Parquet 快照分区；查询合并这些分区，
+对相同身份及版本去重。逻辑表为 `events`、`artifacts`、`evidence`；保留不同回复
+分支和内容版本，因此 `count(*)` 是版本数，`count(DISTINCT record_id)` 是身份数。
+`record_conflicts` 视图列出拥有多个版本且版本时间不足以确定次序的记录。
+
+证据引用查询示例：
+
+```bash
+lifebase query "SELECT a.role, a.text_parts, e.content_hash, e.raw_member, e.raw_pointer FROM artifacts a JOIN evidence e USING (record_id, revision_id) WHERE e.record_kind = 'artifact' LIMIT 20"
+```
+
+命令输出 JSON；单个文件失败会保留 RAW、记录原因并返回非零退出码，批量导入继续
+处理其他文件。`query` 只接受单条 SELECT / WITH SELECT，对 SQL 禁用外部文件和
+网络访问；`list` / 空库查询不会创建数据目录。
+
+本版支持 ZIP 根目录中唯一的 `conversations.json` 数组；编号会话文件、加密 ZIP、
+非文本内容理解仍待扩展。JSON 成员上限为 128 MiB，整个 ZIP 仍完整归档。结构错误
+会报告，缺失或异常时间保留空值并附诊断；未知内容类型仅保留消息元数据与 RAW 引用。
+查询目前将登记的 Parquet 分区载入内存，适合原型规模数据。
+
+契约见 [canonical v1](docs/design/chatgpt-minimal-contract-draft.md)，具体行为由合成
+端到端测试覆盖。后续真实数据验证只在仓库外进行。
 
 ## 安全红线
 
