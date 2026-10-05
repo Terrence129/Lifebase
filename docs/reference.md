@@ -40,3 +40,7 @@ HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（Month 12+ 才
 - `schemas/` — JSON Schema，与代码同仓库同版本
 - `docs/adr/` — 架构决策记录（ADR）
 - `docs/context.md` — 完整项目规格（背景资料，非 canonical）
+
+## 5. 待评估的架构猜想（非既定决策）
+
+- [Nango：LifeSync API 接入候选](design/nango-integration-hypothesis.md) — **Defer**。当多个 OAuth 来源的持续同步产生重复维护成本时，再评估以 **Integrate** 方式接入 Nango；记录适用场景、部署取舍、证据保留问题和重新评估条件，尚未选型或接入。
