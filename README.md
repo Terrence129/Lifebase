@@ -18,7 +18,47 @@ LifeSync（采集）→ LifeVault（不可变存储）→ LifeGraph（知识图�
 
 ## 快速开始
 
-（待实现）
+### 开发环境
+
+在已安装 conda 的设备上，从仓库根目录执行（macOS / Linux）：
+
+```bash
+conda env create --file environment.yml
+conda activate lifebase
+conda env config vars set --name lifebase "UV_PROJECT_ENVIRONMENT=$CONDA_PREFIX"
+conda deactivate
+conda activate lifebase
+uv sync --locked --extra dev --inexact
+```
+
+退出后重新激活，用于加载刚保存的环境变量。Windows PowerShell 用户将第三条命令改为：
+
+```powershell
+conda env config vars set --name lifebase "UV_PROJECT_ENVIRONMENT=$env:CONDA_PREFIX"
+```
+
+之后每次开发只需 `conda activate lifebase`。`UV_PROJECT_ENVIRONMENT` 指向这台设备上
+的专用 conda 环境，让 uv 将项目及其依赖安装在其中。同步时保留 `--inexact`，以保留
+conda 安装的工具包。
+
+配置文件分工：
+
+- `environment.yml`：环境名称、Python 3.12、pip 和固定版本的 uv。
+- `pyproject.toml`：项目依赖与开发依赖的声明。
+- `uv.lock`：锁定 Python 库版本和分发文件哈希，供其他设备及 CI 安装同一组库版本。
+
+这些文件不包含本机环境路径；conda 的底层系统包会按设备平台解析，并非逐字节复制
+整套环境。已有环境在拉取依赖变更后，重新执行 `uv sync --locked --extra dev --inexact`。
+有意升级依赖时执行 `uv lock --upgrade`，再同步并验证。
+
+### 本地验证
+
+```bash
+uv run ruff check .
+uv run pytest
+```
+
+CLI 目前仍是骨架，导入与查询功能待实现。
 
 ## 安全红线
 
