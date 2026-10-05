@@ -50,9 +50,14 @@ class SourceRegistry:
             db.row_factory = sqlite3.Row
             return [dict(row) for row in db.execute("SELECT * FROM imports ORDER BY source, ingested_at")]
 
-    def partitions(self) -> list[str]:
+    def partitions(self, *, source: str | None = None, collector_version: str | None = None,
+                   parser_version: str | None = None, schema_version: int | None = None) -> list[str]:
+        filters = {"source": source, "collector_version": collector_version,
+                   "parser_version": parser_version, "schema_version": schema_version}
         return sorted({row["partition"] for row in self._rows()
-                       if row["partition"] is not None and row["error"] is None})
+                       if row["partition"] is not None and row["error"] is None
+                       and all(value is None or row[name] == value
+                               for name, value in filters.items())})
 
     def list_sources(self) -> list[dict[str, Any]]:
         grouped: dict[str, list[dict[str, Any]]] = {}

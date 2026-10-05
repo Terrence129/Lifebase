@@ -7,12 +7,12 @@ from pathlib import Path
 from typing import Any
 
 from lifebase.core.hashing import sha256_bytes
-from lifebase.core.paths import data_path
+from lifebase.core.paths import data_path, require_plain_path
 from lifebase.core.records import SCHEMA_VERSION, canonical_json
 from lifebase.sync.collectors.chatgpt import ChatGPTCollector
 from lifebase.sync.registry import SourceRegistry
-from lifebase.vault.manifest import ArchiveManifest
-from lifebase.vault.silver import SilverStore
+from lifebase.vault.manifest import ArchiveEntry, ArchiveManifest
+from lifebase.vault.silver import SCHEMAS, SilverStore
 from lifebase.vault.store import ObjectStore
 
 
@@ -34,14 +34,39 @@ def ingest_file(path: Path, data_dir: Path, source: str) -> ImportResult:
     metadata: dict[str, Any] = collector.metadata() | {"schema_version": SCHEMA_VERSION}
     vault = data_dir / "vault"
     entry = ArchiveManifest(vault).archive(path, source, metadata["collector_version"])
+    return _process_archive(entry, data_dir, metadata)
+
+
+def reprocess_archive(entry: ArchiveEntry, data_dir: Path) -> ImportResult:
+    """重用已有 RAW 与首次入库时间；不重新归档 inbox 文件。"""
+    data_dir = data_path(data_dir)
+    if not entry.collector_version.startswith("chatgpt@"):
+        raise ValueError("本版只支持重建由 ChatGPT collector 归档的来源")
+    metadata = ChatGPTCollector(entry.source).metadata() | {"schema_version": SCHEMA_VERSION}
+    return _process_archive(entry, data_dir, metadata)
+
+
+def _process_archive(entry: ArchiveEntry, data_dir: Path,
+                     metadata: dict[str, Any]) -> ImportResult:
+    vault = data_dir / "vault"
+    for path in (vault / "silver", data_dir / "registry.sqlite"):
+        require_plain_path(path, data_dir)
+    for suffix in ("-wal", "-shm", "-journal"):
+        require_plain_path(data_dir / ("registry.sqlite" + suffix), data_dir)
     registry = SourceRegistry(data_dir)
-    pipeline = {"source": source, "content_hash": entry.content_hash,
+    pipeline = {"source": entry.source, "content_hash": entry.content_hash,
                 "collector_version": metadata["collector_version"],
                 "parser_version": metadata["parser_version"], "schema_version": SCHEMA_VERSION}
     key = sha256_bytes(canonical_json(pipeline))
     try:
+        require_plain_path(ObjectStore(vault).object_path(entry.content_hash), data_dir)
+        require_plain_path(vault / "silver" / key, data_dir)
+        for name in ("partition.json", *(f"{table}.parquet" for table in SCHEMAS)):
+            require_plain_path(vault / "silver" / key / name, data_dir)
         raw_path = ObjectStore(vault).verify(entry.content_hash)
-        collector = ChatGPTCollector(source, entry.ingested_at)
+        if raw_path.stat().st_size != entry.size_bytes:
+            raise ValueError("RAW 长度与归档索引不一致")
+        collector = ChatGPTCollector(entry.source, entry.ingested_at)
         # 解析归档对象，不重新读取可能在归档后发生变化的 inbox 文件。
         raw = collector.ingest(str(raw_path))
         if raw.content_hash != entry.content_hash:

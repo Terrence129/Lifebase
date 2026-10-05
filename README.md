@@ -131,6 +131,39 @@ lifebase verify
 不提供并发写入期间的一致性快照。文件内容、mtime 和权限保持不变；操作系统
 可能因读取更新 atime。实现与边界见 [ADR-008](docs/adr/ADR-008-只读完整性检查.md)。
 
+### 从 RAW 重建派生数据
+
+保留 `vault/objects/` 和 `vault/manifest.sqlite`，即使 inbox 原文件不在，也可以执行：
+
+```bash
+lifebase --data-dir ~/Lifebase-demo rebuild
+# 只重建某个账户来源
+lifebase --data-dir ~/Lifebase-demo rebuild --source chatgpt:synthetic-account
+lifebase --data-dir ~/Lifebase-demo verify
+```
+
+`rebuild` 使用当前安装的 ChatGPT collector/parser 和 schema 版本，从只读 manifest
+恢复来源、原始文件名及首次入库时间，再读取并校验 RAW，重新解析、发布 Silver
+和登记 Source Registry。它不会重新归档 inbox 文件，也不会修改 RAW 或 manifest。
+缺失的完整分区和 registry 可重新生成；完整的已有分区在哈希与逻辑结果校验后复用。
+已有分区或文件损坏时报告失败并保留现场，不覆盖或清理；manifest 丢失时无法推测
+来源和首次入库时间。操作前停止向数据目录写入，manifest 有 WAL/恢复日志时拒绝重建。
+
+输出 JSON 包含当前 `collector_version`、`parser_version`、`schema_version` 和逐条
+`rebuilds`，状态为 `rebuilt`、`unchanged` 或 `error`。单条失败仍处理其他归档，整体
+`partial` / `error` 返回 1，全部成功返回 0。空库或未匹配来源返回空列表，不创建目录。
+
+处理版本升级会新增分区，旧分区保留。默认 query 继续合并全部成功分区；需要核对
+某次重建结果时，使用 rebuild 输出的版本显式筛选，例如当前版本：
+
+```bash
+lifebase --data-dir ~/Lifebase-demo query --source chatgpt:synthetic-account --parser-version chatgpt@0.1.0 --schema-version 1 "SELECT count(*) FROM artifacts"
+```
+
+还可使用 `--collector-version`；多个筛选条件同时满足才会选入分区。筛选仅选择已有
+产物，不安装或执行历史解析器。若同一个处理版本生成不同逻辑数据，重建会报错，
+应先核对变化原因并升级 parser 版本。决策见 [ADR-009](docs/adr/ADR-009-RAW重放与处理版本选择.md)。
+
 ## 安全红线
 
 真实个人数据与密钥永不进入 git（数据只存本地，默认 `~/Lifebase/`）；本仓库只包含代码、schema、文档与合成测试数据。完整红线与规则以 [AGENTS.md](./AGENTS.md) 为唯一事实源。

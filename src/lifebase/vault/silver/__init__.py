@@ -73,25 +73,42 @@ class SilverStore:
         except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
             raise SilverError(f"Silver 分区缺失或不完整：{key}") from error
 
+    def _tables(self, records: NormalizedRecords) -> dict[str, pa.Table]:
+        rows = {"events": [asdict(record) for record in records.events],
+                "artifacts": [asdict(record) for record in records.artifacts],
+                "evidence": [record.row() for record in records.evidence]}
+        tables: dict[str, pa.Table] = {}
+        for name, schema in SCHEMAS.items():
+            values = sorted(rows[name], key=lambda row: (row["record_id"], row.get("revision_id"),
+                                                        row.get("evidence_id", "")))
+            table = pa.Table.from_pylist(values, schema=schema)
+            table.validate(full=True)
+            tables[name] = table
+        return tables
+
+    def _reuse(self, key: str, tables: dict[str, pa.Table], pipeline: dict[str, Any]) -> None:
+        if self.verify(key)["pipeline"] != pipeline:
+            raise SilverError("分区处理版本与请求不一致")
+        try:
+            for name, expected in tables.items():
+                actual = pq.ParquetFile(self.partition_path(key) / f"{name}.parquet").read()
+                if actual.schema != expected.schema or not actual.equals(expected):
+                    raise SilverError("相同处理版本生成了不同逻辑结果；请核对并升级 parser 版本")
+        except pa.ArrowException as error:
+            raise SilverError("已有分区无法读取，未替换产物") from error
+
     def write(self, key: str, records: NormalizedRecords, pipeline: dict[str, Any]) -> bool:
         folder = self.partition_path(key)
+        tables = self._tables(records)
         if folder.exists():
-            if self.verify(key)["pipeline"] != pipeline:
-                raise SilverError("分区处理版本与请求不一致")
+            self._reuse(key, tables, pipeline)
             return False
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         staging = Path(tempfile.mkdtemp(prefix=".staging-", dir=self.root))
         try:
-            rows = {"events": [asdict(record) for record in records.events],
-                    "artifacts": [asdict(record) for record in records.artifacts],
-                    "evidence": [record.row() for record in records.evidence]}
             hashes: dict[str, str] = {}
             counts: dict[str, int] = {}
-            for name, schema in SCHEMAS.items():
-                values = sorted(rows[name], key=lambda row: (row["record_id"], row.get("revision_id"),
-                                                            row.get("evidence_id", "")))
-                table = pa.Table.from_pylist(values, schema=schema)
-                table.validate(full=True)
+            for name, table in tables.items():
                 file = staging / f"{name}.parquet"
                 pq.write_table(table, file, compression="zstd")
                 hashes[name] = sha256_file(file)
@@ -103,8 +120,9 @@ class SilverStore:
                 staging.rename(folder)
             except OSError:
                 # 另一个进程先发布同一分区时复用完整产物；不替换任何已发布分区。
-                if not folder.exists() or self.verify(key)["pipeline"] != pipeline:
+                if not folder.exists():
                     raise
+                self._reuse(key, tables, pipeline)
                 return False
             self.verify(key)
             return True
