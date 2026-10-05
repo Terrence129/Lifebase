@@ -9,7 +9,7 @@ from typing import Any
 from lifebase.core.hashing import sha256_bytes
 from lifebase.core.paths import data_path, require_plain_path
 from lifebase.core.records import SCHEMA_VERSION, canonical_json
-from lifebase.sync.collectors.chatgpt import ChatGPTCollector
+from lifebase.sync.collectors import make_collector
 from lifebase.sync.quality import QualityReport, quality_from_records
 from lifebase.sync.registry import SourceRegistry
 from lifebase.vault.manifest import ArchiveEntry, ArchiveManifest
@@ -31,9 +31,8 @@ class ImportResult:
 
 def ingest_file(path: Path, data_dir: Path, source: str) -> ImportResult:
     data_dir = data_path(data_dir)
-    collector = ChatGPTCollector(source)
     data_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-    metadata: dict[str, Any] = collector.metadata() | {"schema_version": SCHEMA_VERSION}
+    metadata: dict[str, Any] = make_collector(source).metadata() | {"schema_version": SCHEMA_VERSION}
     vault = data_dir / "vault"
     entry = ArchiveManifest(vault).archive(path, source, metadata["collector_version"])
     return _process_archive(entry, data_dir, metadata)
@@ -42,9 +41,7 @@ def ingest_file(path: Path, data_dir: Path, source: str) -> ImportResult:
 def reprocess_archive(entry: ArchiveEntry, data_dir: Path) -> ImportResult:
     """重用已有 RAW 与首次入库时间；不重新归档 inbox 文件。"""
     data_dir = data_path(data_dir)
-    if not entry.collector_version.startswith("chatgpt@"):
-        raise ValueError("本版只支持重建由 ChatGPT collector 归档的来源")
-    metadata = ChatGPTCollector(entry.source).metadata() | {"schema_version": SCHEMA_VERSION}
+    metadata = make_collector(entry.source).metadata() | {"schema_version": SCHEMA_VERSION}
     return _process_archive(entry, data_dir, metadata)
 
 
@@ -68,7 +65,7 @@ def _process_archive(entry: ArchiveEntry, data_dir: Path,
         raw_path = ObjectStore(vault).verify(entry.content_hash)
         if raw_path.stat().st_size != entry.size_bytes:
             raise ValueError("RAW 长度与归档索引不一致")
-        collector = ChatGPTCollector(entry.source, entry.ingested_at)
+        collector = make_collector(entry.source, entry.ingested_at)
         # 解析归档对象，不重新读取可能在归档后发生变化的 inbox 文件。
         raw = collector.ingest(str(raw_path))
         if raw.content_hash != entry.content_hash:

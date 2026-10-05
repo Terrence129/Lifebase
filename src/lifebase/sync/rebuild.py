@@ -8,7 +8,7 @@ from pathlib import Path
 
 from lifebase.core.paths import data_path, require_plain_path
 from lifebase.core.records import SCHEMA_VERSION
-from lifebase.sync.collectors.chatgpt import ChatGPTCollector
+from lifebase.sync.collectors import metadata_for
 from lifebase.sync.pipeline import ImportResult, reprocess_archive
 from lifebase.vault.manifest import ArchiveManifest
 
@@ -46,7 +46,7 @@ def rebuild(data_dir: Path, source: str | None = None) -> RebuildReport:
     if not manifest.path.exists() and objects.exists() and any(objects.iterdir()):
         raise ValueError("RAW 存在但归档索引缺失，无法恢复来源和首次入库时间")
     entries = manifest.entries(source)
-    metadata = ChatGPTCollector(source or "chatgpt:rebuild").metadata()
+    metadata = metadata_for(source)
     results: list[RebuildItem] = []
     for entry in entries:
         try:

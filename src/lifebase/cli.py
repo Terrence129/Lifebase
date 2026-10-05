@@ -15,7 +15,7 @@ from typing import Any
 import duckdb
 
 from lifebase.core.paths import data_path
-from lifebase.sync.collectors.chatgpt import ChatGPTCollector
+from lifebase.sync.collectors import make_collector
 from lifebase.sync.pipeline import ingest_file
 from lifebase.sync.quality import quality
 from lifebase.sync.rebuild import rebuild
@@ -96,7 +96,7 @@ def run(argv: list[str] | None = None) -> int:
                 if not inbox.is_dir():
                     _print({"imports": [], "skipped": [], "message": "inbox 为空或尚未创建"})
                     return 0
-                collector = ChatGPTCollector(args.source)
+                collector = make_collector(args.source)
                 candidates = sorted(path for path in inbox.iterdir() if path.is_file())
                 paths = [path for path in candidates if collector.detect(str(path))]
                 skipped = [path.name for path in candidates if path not in paths]
