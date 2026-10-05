@@ -103,7 +103,11 @@ def test_boundary_layers_have_no_code() -> None:
 
 
 def test_no_project_level_venv() -> None:
-    """开发与校验一律用 conda lifebase 环境；项目级 .venv 会让 uv 绕过 conda。"""
+    """开发与校验一律用 conda lifebase 环境；项目级 .venv 会让 uv 绕过 conda。
+
+    CI 通过 `UV_PROJECT_ENVIRONMENT` 把 uv 环境放到仓库外（见 ci.yml），
+    因此「仓库内无 .venv」在本地与 CI 都成立，本门禁无条件执行。
+    """
     assert not (ROOT / ".venv").exists(), "项目级 .venv 不应存在（用 conda `lifebase` 环境）"
 
 

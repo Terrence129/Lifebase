@@ -47,7 +47,9 @@ ADR 与 git 历史；「最近本地验证」只保留最近一次结果，历�
 仅 Windows 平台安装）；删除项目级 `.venv`（其 Python 3.14.4 让 `uv run` 绕过
 conda 环境），开发与校验一律在 conda `lifebase` 环境内进行，已写入 AGENTS.md §6。
 CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录本地结果，不声称已核对
-每次远端 CI 运行。完整规模基准按需执行，CI 仅运行小样例正确性检查。
+每次远端 CI 运行。CI 首次运行发现 `.venv` 门禁在 runner 误报（uv 默认在仓库内
+建 `.venv`），已通过 `UV_PROJECT_ENVIRONMENT` 把 CI 环境移到仓库外修复。
+完整规模基准按需执行，CI 仅运行小样例正确性检查。
 
 ### 待验证事项与阻塞
 
