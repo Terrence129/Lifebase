@@ -1,0 +1,28 @@
+[project]
+name = "lifebase"
+version = "0.0.1"
+description = "Local-first personal data infrastructure: collect, preserve and normalize a fragmented digital life."
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.1",
+    "pyarrow>=17",
+]
+
+[project.scripts]
+lifebase = "lifebase.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
