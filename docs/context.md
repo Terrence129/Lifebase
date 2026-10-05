@@ -1215,14 +1215,7 @@ Minimal Cloud Exposure
 User Controlled
 ```
 
-禁止：
-
-```
-commit personal data to Git
-commit API keys
-public raw datasets
-upload entire vault to LLM provider
-```
+禁止事项一律以 [AGENTS.md](../AGENTS.md) 红线与「硬约束」为准（本页为背景资料，此处不再重复）。
 
 如果调用远程 LLM：
 

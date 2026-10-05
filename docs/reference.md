@@ -23,6 +23,10 @@ HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（长期规划�
 更新日期：**2026-10-05**。当前处于首条 ChatGPT 导入链路的原型与可靠性验证阶段；
 以下完成状态以现有实现、合成测试及本地验收为依据，不代表真实官方导出已通过验收。
 
+维护约定（防膨胀）：本表与下方「待验证」「下一步」清单**只保留当前阶段的在研内容**；
+一个阶段结束进入下一阶段时，将已完成行浓缩为一条历史摘要（日期 + ADR 链接），明细归
+ADR 与 git 历史；「最近本地验证」只保留最近一次结果，历史归 git。
+
 | 分类 | 已完成内容 | 验收与记录 |
 | --- | --- | --- |
 | Reuse（conda、uv、pytest、ruff） | 专用开发环境、依赖声明与锁文件、CI 检查流程 | 环境同步说明见 [README](../README.md#开发环境)，决策见 [ADR-005](adr/ADR-005-conda开发环境与uv依赖锁定.md) |
@@ -32,12 +36,16 @@ HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（长期规划�
 | Build + Reuse（已有 collector、SQLite、PyArrow） | rebuild：仅凭 RAW 与 manifest 重建派生数据；query 显式筛选来源与处理版本 | 保留首次入库时间，完整产物复用，损坏产物不覆盖；见 [ADR-009](adr/ADR-009-RAW重放与处理版本选择.md) |
 | Build + Reuse（DuckDB、pytest、Python 标准库） | quality：导入与汇总质量统计；合成规模工具与基线 | 区分身份、版本、缺失时间及不支持内容；三档规模各运行三次，见 [基线](benchmarks/README.md) 与 [ADR-010](adr/ADR-010-导入质量报告与合成规模基线.md) |
 | Build + Reuse（现有 collector、CLI、pytest） | 来源注册表：`sync/collectors/__init__.py` 按 source_type 路由 collector（make_collector / metadata_for / detect_collector），pipeline / CLI / rebuild 不再硬编码 ChatGPTCollector | 行为不变；单 collector 时未知前缀回退，多 collector 时报错；9 项注册表测试覆盖，第二来源可插拔接入 |
+| Build（标准库 + pytest，无新依赖） | 约束门禁：红线短语唯一归属、`.md` 链接有效性、`.gitignore` 覆盖、层级边界检查（`tests/unit/test_constraints.py`）；AGENTS.md §3 表格绑定执行门禁；ADR 骨架补「被否方案」；清理 context.md 与 fixtures/README 的红线复述 | 门禁随 pytest 与 CI 自动执行；见 [ADR-011](adr/ADR-011-约束门禁与文档防漂移.md) |
 
-最近本地验证（2026-10-05，conda `lifebase` 环境，Windows 原生）：`uv run ruff check .`
-通过，`uv run pytest` **89 项通过、4 项跳过**（4 项符号链接测试因 Windows 无创建
-权限跳过，Linux/CI 上全量执行 93 项）。本次同步修复 Windows 原生兼容问题：vault
-发布时只读临时文件删除失败（`vault/store.py`）、测试 fixture 读取编码、符号链接
-测试跳过守卫；conda 环境补齐 certifi 后 `uv sync` 无需手动解除 SSL 变量。
+最近本地验证（2026-10-05，conda `lifebase` 环境，Windows 原生）：`ruff check .`
+通过，`pytest` **95 项通过、4 项跳过**（4 项符号链接测试因 Windows 无创建权限
+跳过，Linux/CI 上全量执行 99 项）。本次同步：新增 6 项约束门禁测试（红线唯一
+归属、md 链接、gitignore 覆盖、层级边界、禁止项目级 `.venv`，见
+[ADR-011](adr/ADR-011-约束门禁与文档防漂移.md)）；
+发现并解决 tzdata 缺失导致的 pyarrow 时间戳测试失败（tzdata 已加入项目依赖，
+仅 Windows 平台安装）；删除项目级 `.venv`（其 Python 3.14.4 让 `uv run` 绕过
+conda 环境），开发与校验一律在 conda `lifebase` 环境内进行，已写入 AGENTS.md §6。
 CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录本地结果，不声称已核对
 每次远端 CI 运行。完整规模基准按需执行，CI 仅运行小样例正确性检查。
 
@@ -81,57 +89,14 @@ CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录
 - `src/lifebase/graph/`、`src/lifebase/humanos/` — 边界占位，当前阶段禁止在此写代码
 - `schemas/` — JSON Schema，与代码同仓库同版本
 - `docs/adr/` — 架构决策记录（ADR）
+- `docs/design/` — 待评估的架构猜想与设计假设（§5 索引指向）
 - `docs/context.md` — 完整项目规格（背景资料，非 canonical）
 
-## 5. 待评估的架构猜想（非既定决策）
+## 5. 待评估的架构猜想与灵感（索引，非既定决策）
 
-本栏目复用为项目灵感入口，记录尚未验证的思路；记录不代表已选型或已实现。
+本栏目是项目灵感入口，记录尚未验证的思路；记录不代表已选型或已实现。
+**每条灵感一律独立成文**（`docs/design/*.md`），此处只保留一句话摘要与链接，
+防止参考文档随灵感积累而膨胀。
 
 - [Nango：LifeSync API 接入候选](design/nango-integration-hypothesis.md) — **Defer**。当多个 OAuth 来源的持续同步产生重复维护成本时，再评估以 **Integrate** 方式接入 Nango；记录适用场景、部署取舍、证据保留问题和重新评估条件，尚未选型或接入。
-
-### 浏览器辅助采集：从已登录的 App 获取可归档数据
-
-- 记录日期：**2026-10-05**。
-- 状态：**待验证灵感 / Defer**；本次只分析源码，未安装扩展、访问实际账户或实现豆包接入。
-- 灵感来源：[chensanle/doubao-helper](https://github.com/chensanle/doubao-helper)。
-
-**核心思路**：部分 App 没有方便的导出入口，但网页展示历史内容时仍会请求数据。
-可评估由用户主动触发浏览器采集，利用现有登录状态取得消息并生成本地文件，再交给
-Lifebase 的 Data Inbox、RAW 归档和 Python 解析器处理。浏览器负责获取，Lifebase
-负责长期保存、标准化与查询；无需让模型复述历史来代替来源记录。
-
-候选数据流（尚未实现）：
-
-```text
-已登录的 App 网页 → 用户触发采集 → 原始分页响应 + 采集说明 → 本地采集包
-    → Data Inbox → RAW 归档 → 来源解析器 → 标准记录与证据 → 查询
-```
-
-**源码观察**（2026-10-05 所见，正式验证时重新核对）：doubao-helper 通过观察页面
-请求取得会话与分页参数，调用网页的 `/im/chain/single` 接口获取当前会话消息；
-默认接口模式，滚动方式需另行选择；JSON 保留入选消息的原始对象。该接口属于网页
-内部接口，兼容性与维护成本待验证。
-
-**适合借鉴的地方**：浏览器登录态与本地归档分工、优先获取结构化数据、用户触发
-导出、分页停止原因和来源模式记录。对 Lifebase，应优先评估保存完整响应后再解析，
-让暂时不支持的内容仍有后续重建机会。
-
-**尚不能直接采用的假设**：导出成功不等于会话完整。当前工具会过滤未提取到文本的
-消息，没有单独提取消息时间字段，也未保存完整分页响应；分支覆盖不能仅凭消息列表
-确认。导出时间与消息发生时间需分别理解；原始对象是否含可用时间字段仍需实测。
-
-| 分类 | 候选做法 | 理由 |
-| --- | --- | --- |
-| Reuse | 将 doubao-helper 作为导出工具与格式研究样例，直接复用前核实许可和兼容性 | 减少接口探索与重复开发 |
-| Integrate | 验证通过后，将其本地 JSON 导出作为 LifeSync 的可选输入 | 先通过文件连接浏览器与 Python，无需直接写中央库 |
-| Build | 设计来源解析与证据映射；必要时补充完整采集包 | 保留原始响应、来源身份、工具版本、停止原因和处理依据 |
-| Defer | 全部会话自动遍历、持续后台采集、通用跨 App 扩展 | 先验证一个会话的完整获取，不改变当前开发主线 |
-
-**重新评估与最小验证**：选择一个可控测试会话，覆盖长历史、重复文本、回复分支、
-图片或其他非文本内容；检查分页是否完整、当前会话身份是否一致、原始时间字段含义，
-以及中断后是否明确报告部分结果。用合成采集包验证重复导入、版本保留、证据回溯和
-RAW 重放。取得验证证据后再提出正式 ADR、契约设计及实施范围。
-
-源码定位：[页面请求观察](https://github.com/chensanle/doubao-helper/blob/main/page-hook.js)、
-[分页采集与导出](https://github.com/chensanle/doubao-helper/blob/main/content.js)、
-[用户触发与进度控制](https://github.com/chensanle/doubao-helper/blob/main/popup.js)。
+- [浏览器辅助采集：从已登录的 App 获取可归档数据](design/doubao-browser-collection-hypothesis.md) — **待验证灵感 / Defer**。以 doubao-helper 为样例研究页面接口采集思路；验证后可作为 LifeSync 的可选输入，完整响应先归档再解析。

@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "duckdb>=1.1",
     "pyarrow>=17",
+    "tzdata>=2025.2; sys_platform == 'win32'",
 ]
 
 [project.scripts]

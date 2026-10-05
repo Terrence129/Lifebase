@@ -37,14 +37,16 @@
 
 ## 3. 硬约束 ↔ 验证方式
 
-| 约束 | 验证方式 |
-| --- | --- |
-| 原始数据不入 git | 提交前 `git status` 不含个人数据；`.gitignore` 覆盖 `data/` `inbox/` `*.db` `*.parquet` `.env` |
-| RAW 不可变 | vault 读回 hash 校验（涉及相关代码改动时必测，已由 pytest 覆盖并纳入 CI） |
-| Collector 幂等 | 同一 fixture 重复导入产物一致（涉及相关代码改动时必测，已覆盖十次导入并纳入 CI） |
-| 不跨层写代码 | `graph/`、`humanos/` 当前禁止写代码；`vault/` 不 import `graph/` |
-| 测试数据合成 | `tests/fixtures/` 仅含合成、脱敏数据 |
-| 不提交密钥 | `.env` 已 gitignore |
+| 约束 | 验证方式 | 执行门禁 |
+| --- | --- | --- |
+| 原始数据不入 git | 提交前 `git status` 不含个人数据；`.gitignore` 覆盖 `data/` `inbox/` `*.db` `*.parquet` `.env` | `tests/unit/test_constraints.py::test_gitignore_covers_local_data_and_env` + 提交前人工 `git status` |
+| RAW 不可变 | vault 读回 hash 校验（涉及相关代码改动时必测） | `tests/unit/test_vault.py`（哈希与只读完整性） |
+| Collector 幂等 | 同一 fixture 重复导入产物一致，已覆盖十次导入（涉及相关代码改动时必测） | `tests/unit/test_vault.py::test_archive_roundtrip_and_idempotency` |
+| 不跨层写代码 | `graph/`、`humanos/` 当前禁止写代码；`vault/` 不 import `graph/` | `tests/unit/test_constraints.py::test_boundary_layers_have_no_code`、`::test_vault_does_not_import_graph` |
+| 测试数据合成 | `tests/fixtures/` 仅含合成、脱敏数据 | 无机械门禁（人工核对 fixtures 内容） |
+| 不提交密钥 | `.env` 已 gitignore | `tests/unit/test_constraints.py::test_gitignore_covers_local_data_and_env` |
+| 约束不复制（红线唯一归属） | 红线特征短语只出现在 `AGENTS.md`，其余文件改指针；豁免显式列于门禁白名单 | `tests/unit/test_constraints.py::test_red_line_phrases_stay_in_agents_md` |
+| 文档链接有效 | 仓库 `.md` 本地链接目标存在（只证存在，不证锚点） | `tests/unit/test_constraints.py::test_local_md_links_resolve` |
 
 ## 4. 收工前校验与完成定义（DoD）
 
@@ -53,17 +55,19 @@
 改动代码的任务，收工前运行本地校验：
 
 ```bash
+# 在 conda `lifebase` 环境内运行（先 conda activate lifebase）
 uv run ruff check .
 uv run pytest
 ```
 
-CI（`.github/workflows/ci.yml`）在 push / PR 时执行同样两项。
+CI（`.github/workflows/ci.yml`）在 push / PR 时执行同样两项；`tests/unit/test_constraints.py` 内的约束门禁（红线唯一归属、文档链接、gitignore 覆盖、层级边界）随 `pytest` 自动执行，无需单独命令。
 
 一个任务算完成，当且仅当：
 
 - [ ] 改动代码时，`ruff` 无告警、`pytest` 全绿；未改动代码时，已核对相关内容与差异，无需运行两项校验。
 - [ ] 涉及数据路径的改动，附 hash 校验 / 幂等性验证。
 - [ ] 新的重要决策已写 ADR（`docs/adr/ADR-NNN-主题.md`）。
+- [ ] 编辑 `AGENTS.md` / `docs/reference.md` 时，逐项过一遍防漂移审计清单：重复规则（红线只留 `AGENTS.md` 一个家，其余改链接）；历史放错层级（只写当前事实，历史归 commits/ADR）；实现状态标注（会腐烂，以代码与清单为准）；手抄目录/清单；推理过程记录（留结论）；段落墙（一段多条规则拆开）；强调词通胀；spec 语气（已落地内容不残留「应该」）。
 - [ ] 未触碰红线与边界层（或已获用户批准）。
 
 ## 5. 工作规则
@@ -75,11 +79,12 @@ CI（`.github/workflows/ci.yml`）在 push / PR 时执行同样两项。
 5. 挑战不必要的复杂性；避免过早的基础设施复杂度。
 6. 按「数据生命周期几十年」设计 schema 演进：RAW 永不变，schema/parser 版本化，派生数据可弃。
 7. 保守处理敏感个人数据与第三方数据。
-8. **及时同步开发进度**：完成里程碑、调整任务范围或发现/解除阻塞后，须在任务收尾前更新项目进度文档（当前为 `docs/reference.md` 的「当前阶段」），注明更新日期、已完成内容、待验证事项、阻塞及下一步；同步相关 README 摘要，区分已实现能力与规划，过时描述须更新或标注为历史背景，不得只在聊天中记录进度。
+8. **及时同步开发进度**：完成里程碑、调整任务范围或发现/解除阻塞后，须在任务收尾前更新项目进度文档（当前为 `docs/reference.md` 的「当前阶段」），注明更新日期、已完成内容、待验证事项、阻塞及下一步；同步相关 README 摘要，区分已实现能力与规划，过时描述须更新或标注为历史背景，不得只在聊天中记录进度。「当前阶段」表只保留当前阶段在研行，阶段结束时浓缩为历史摘要（日期 + ADR 链接），明细归 ADR 与 git 历史；待评估灵感一律独立成文（`docs/design/*.md`），`reference.md` 只留索引——防止参考文档无限膨胀。
 
 ## 6. 技术栈约定
 
 - Python ≥ 3.12，依赖管理用 `uv`；代码在 `src/lifebase/`（src layout）。
+- 开发与校验一律在 conda `lifebase` 环境内进行（`conda activate lifebase`）；仓库内**不创建项目级 `.venv`**——uv 会优先使用 `.venv` 而绕过 conda 环境，导致解释器与依赖错位。由 `tests/unit/test_constraints.py::test_no_project_level_venv` 强制执行，环境决策见 [ADR-005](docs/adr/ADR-005-conda开发环境与uv依赖锁定.md)。
 - 数据分析：DuckDB + Parquet；测试：pytest；代码检查：ruff。
 - 数据契约用 dataclass 定义，类型标注齐全；注释语言保持仓库内一致。
 - 重要决策写 ADR（`docs/adr/ADR-NNN-主题.md`）。
