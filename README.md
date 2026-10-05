@@ -164,6 +164,42 @@ lifebase --data-dir ~/Lifebase-demo query --source chatgpt:synthetic-account --p
 产物，不安装或执行历史解析器。若同一个处理版本生成不同逻辑数据，重建会报错，
 应先核对变化原因并升级 parser 版本。决策见 [ADR-009](docs/adr/ADR-009-RAW重放与处理版本选择.md)。
 
+### 导入质量与规模基线
+
+ingest 和 rebuild 的单条成功结果包含 `quality`；也可以汇总已登记的成功分区：
+
+```bash
+lifebase --data-dir ~/Lifebase-demo quality
+lifebase --data-dir ~/Lifebase-demo quality --source chatgpt:synthetic-account --parser-version chatgpt@0.1.0 --schema-version 1
+```
+
+报告区分会话和消息的 `identities`（身份数）与 `versions`（内容版本数），统计
+`missing_occurred_at_versions`、`missing_known_at_versions`、文本版本、空文本版本、
+不支持的内容类型及数量，并列出证据数。时间缺失、异常或不可靠而变成 NULL 的
+版本都计入缺失时间；具体解析原因仍在单次导入 `issues` / 来源 `diagnostics` 中。
+空文本仅指空数组或全部为空字符串，空白字符保持原样。非文本内容保留 RAW 和
+消息元数据，报告中的“不支持”表示本版没有规范化其内容，不表示 RAW 丢失。
+
+`quality.status` 为 empty / ok / warning；warning 是质量提醒，成功生成报告仍返回
+0，不会把有效归档改判为导入失败。存储损坏导致查询失败则返回 1，可用 verify 定位。
+汇总只覆盖 `selected_partitions` 指定的成功分区，按逻辑行去重；失败导入由 list 查看。
+报告仅输出统计，不输出消息正文；ok 不等于已覆盖整个账户或理解全部媒体。
+
+完整规模基准仅使用生成的合成数据，在仓库根目录按需执行：
+
+```bash
+uv run python -m benchmarks.run --sizes 1000 10000 50000 --repeats 3 --output docs/benchmarks/quality-scale-baseline.json
+```
+
+每档包含两个重叠导出：第二份新增约 5% 消息，修改每第 101 条旧消息，并包含
+分支、缺失时间与非文本。分别测量首次导入、重复导入、聚合查询和质量报告的
+操作耗时与进程峰值 RSS；导出生成不计入测量，各阶段使用独立进程。
+全部输入和仓库均位于工具自己的临时目录，结束后清理。CI 只验证小样例正确性，
+不运行完整基准，也不设机器相关的耗时阈值。
+
+方法、结果及限制见 [规模基线](docs/benchmarks/README.md)，决策见
+[ADR-010](docs/adr/ADR-010-导入质量报告与合成规模基线.md)。
+
 ## 安全红线
 
 真实个人数据与密钥永不进入 git（数据只存本地，默认 `~/Lifebase/`）；本仓库只包含代码、schema、文档与合成测试数据。完整红线与规则以 [AGENTS.md](./AGENTS.md) 为唯一事实源。

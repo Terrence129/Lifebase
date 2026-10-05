@@ -17,6 +17,7 @@ import duckdb
 from lifebase.core.paths import data_path
 from lifebase.sync.collectors.chatgpt import ChatGPTCollector
 from lifebase.sync.pipeline import ingest_file
+from lifebase.sync.quality import quality
 from lifebase.sync.rebuild import rebuild
 from lifebase.sync.registry import SourceRegistry
 from lifebase.sync.verification import verify
@@ -48,14 +49,16 @@ def build_parser() -> argparse.ArgumentParser:
     listing = commands.add_parser("list", help="查看 Source Registry")
     querying = commands.add_parser("query", help="对 events / artifacts / evidence 执行只读 SQL")
     querying.add_argument("sql", help="一条 SELECT 或 WITH SELECT")
-    querying.add_argument("--source", help="只选择指定来源")
-    querying.add_argument("--collector-version", help="只选择指定 collector 处理版本")
-    querying.add_argument("--parser-version", help="只选择指定 parser 处理版本")
-    querying.add_argument("--schema-version", type=int, help="只选择指定 schema 版本")
+    reporting = commands.add_parser("quality", help="汇总导入质量，区分身份、版本和内容缺口")
+    for command in (querying, reporting):
+        command.add_argument("--source", help="只选择指定来源")
+        command.add_argument("--collector-version", help="只选择指定 collector 处理版本")
+        command.add_argument("--parser-version", help="只选择指定 parser 处理版本")
+        command.add_argument("--schema-version", type=int, help="只选择指定 schema 版本")
     verifying = commands.add_parser("verify", help="只读检查 RAW、Silver 与证据引用")
     rebuilding = commands.add_parser("rebuild", help="从 RAW 重建缺失派生数据，复用完整产物")
     rebuilding.add_argument("--source", help="只重建指定来源；默认处理全部归档来源")
-    for command in (ingest, listing, querying, verifying, rebuilding):
+    for command in (ingest, listing, querying, verifying, rebuilding, reporting):
         command.add_argument("--data-dir", type=Path, default=argparse.SUPPRESS,
                              help="本地数据目录，也可放在命令前")
     return parser
@@ -75,6 +78,10 @@ def run(argv: list[str] | None = None) -> int:
             report = rebuild(data_dir, args.source)
             _print(asdict(report))
             return 0 if report.status == "ok" else 1
+        elif args.command == "quality":
+            _print(asdict(quality(data_dir, source=args.source,
+                                 collector_version=args.collector_version,
+                                 parser_version=args.parser_version, schema_version=args.schema_version)))
         elif args.command == "query":
             partitions = SourceRegistry(data_dir).partitions(
                 source=args.source, collector_version=args.collector_version,

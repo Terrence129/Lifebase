@@ -10,6 +10,7 @@ from lifebase.core.hashing import sha256_bytes
 from lifebase.core.paths import data_path, require_plain_path
 from lifebase.core.records import SCHEMA_VERSION, canonical_json
 from lifebase.sync.collectors.chatgpt import ChatGPTCollector
+from lifebase.sync.quality import QualityReport, quality_from_records
 from lifebase.sync.registry import SourceRegistry
 from lifebase.vault.manifest import ArchiveEntry, ArchiveManifest
 from lifebase.vault.silver import SCHEMAS, SilverStore
@@ -25,6 +26,7 @@ class ImportResult:
     artifacts: int
     evidence: int
     issues: tuple[str, ...]
+    quality: QualityReport
 
 
 def ingest_file(path: Path, data_dir: Path, source: str) -> ImportResult:
@@ -79,7 +81,8 @@ def _process_archive(entry: ArchiveEntry, data_dir: Path,
                         earliest=min(times).isoformat() if times else None,
                         latest=max(times).isoformat() if times else None)
         return ImportResult(entry.content_hash, key, created, len(records.events),
-                            len(records.artifacts), len(records.evidence), records.issues)
+                            len(records.artifacts), len(records.evidence), records.issues,
+                            quality_from_records(records))
     except (ValueError, OSError) as error:
         registry.record(entry, metadata, partition=None, error=str(error))
         raise

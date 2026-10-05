@@ -1,0 +1,721 @@
+{
+  "measured_at_utc": "2026-10-05T07:43:30.416728+00:00",
+  "dataset": "synthetic only",
+  "environment": {
+    "python": "3.12.15",
+    "system": "Darwin",
+    "release": "27.0.0",
+    "machine": "arm64",
+    "cpu_count": 6,
+    "duckdb": "1.5.6",
+    "pyarrow": "25.0.1"
+  },
+  "code": {
+    "git_head": "12828de7d8801c0651d2f2f96b45fd539c243e90",
+    "source_sha256": "ef658638d52b259fcf879b71129e845b060e55afb71e501e22b64be06bd99b4b",
+    "lock_sha256": "484e144f583d238efb3d32cd0f1e7cdc15d50f030625c9075405aa3cd58bd7e2"
+  },
+  "method": {
+    "repeats": 3,
+    "phases": [
+      "ingest",
+      "repeat_ingest",
+      "query",
+      "quality"
+    ],
+    "elapsed": "operation wall time; Python/library startup excluded",
+    "memory": "absolute per-worker process peak RSS; startup included",
+    "rss_available": true,
+    "cold_cache": false,
+    "temporary_data": "removed after run"
+  },
+  "cases": [
+    {
+      "input": {
+        "base_messages": 1000,
+        "added_messages": 50,
+        "edited_messages": 9,
+        "logical_messages": 1050,
+        "message_versions": 1059,
+        "conversations": 21,
+        "evidence": 2091,
+        "body_chars": 256,
+        "zip_bytes": 1139093,
+        "json_bytes": 1138825
+      },
+      "summary": {
+        "ingest": {
+          "median_elapsed_seconds": 0.1013939999993454,
+          "max_peak_rss_mib": 83.34375
+        },
+        "repeat_ingest": {
+          "median_elapsed_seconds": 0.09577974999956496,
+          "max_peak_rss_mib": 91.015625
+        },
+        "query": {
+          "median_elapsed_seconds": 0.04268729199975496,
+          "max_peak_rss_mib": 122.84375
+        },
+        "quality": {
+          "median_elapsed_seconds": 0.044547250001414795,
+          "max_peak_rss_mib": 124.734375
+        }
+      },
+      "trials": [
+        {
+          "ingest": {
+            "elapsed_seconds": 0.12461945799987006,
+            "peak_rss_mib": 83.34375,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 0.102754208000988,
+            "peak_rss_mib": 89.84375,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.10539600000083738,
+            "peak_rss_mib": 122.40625,
+            "result": {
+              "messages": 1050,
+              "versions": 1059
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.05269349999980477,
+            "peak_rss_mib": 123.53125,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 21,
+                  "versions": 21,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 1050,
+                  "versions": 1059,
+                  "missing_occurred_at_versions": 52,
+                  "missing_known_at_versions": 105,
+                  "text_versions": 1017,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 42,
+                  "unsupported_content_types": {
+                    "multimodal_text": 42
+                  }
+                },
+                "evidence": 2091
+              }
+            }
+          }
+        },
+        {
+          "ingest": {
+            "elapsed_seconds": 0.09918104200005473,
+            "peak_rss_mib": 83.203125,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 0.09577974999956496,
+            "peak_rss_mib": 91.015625,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.04192341700036195,
+            "peak_rss_mib": 121.25,
+            "result": {
+              "messages": 1050,
+              "versions": 1059
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.044547250001414795,
+            "peak_rss_mib": 124.109375,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 21,
+                  "versions": 21,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 1050,
+                  "versions": 1059,
+                  "missing_occurred_at_versions": 52,
+                  "missing_known_at_versions": 105,
+                  "text_versions": 1017,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 42,
+                  "unsupported_content_types": {
+                    "multimodal_text": 42
+                  }
+                },
+                "evidence": 2091
+              }
+            }
+          }
+        },
+        {
+          "ingest": {
+            "elapsed_seconds": 0.1013939999993454,
+            "peak_rss_mib": 83.109375,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 0.0937176659990655,
+            "peak_rss_mib": 90.859375,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.04268729199975496,
+            "peak_rss_mib": 122.84375,
+            "result": {
+              "messages": 1050,
+              "versions": 1059
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.04452304200094659,
+            "peak_rss_mib": 124.734375,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 21,
+                  "versions": 21,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 1050,
+                  "versions": 1059,
+                  "missing_occurred_at_versions": 52,
+                  "missing_known_at_versions": 105,
+                  "text_versions": 1017,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 42,
+                  "unsupported_content_types": {
+                    "multimodal_text": 42
+                  }
+                },
+                "evidence": 2091
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "base_messages": 10000,
+        "added_messages": 500,
+        "edited_messages": 99,
+        "logical_messages": 10500,
+        "message_versions": 10599,
+        "conversations": 210,
+        "evidence": 20910,
+        "body_chars": 256,
+        "zip_bytes": 11513084,
+        "json_bytes": 11512816
+      },
+      "summary": {
+        "ingest": {
+          "median_elapsed_seconds": 0.9988552920003713,
+          "max_peak_rss_mib": 180.328125
+        },
+        "repeat_ingest": {
+          "median_elapsed_seconds": 0.9869047499996668,
+          "max_peak_rss_mib": 207.546875
+        },
+        "query": {
+          "median_elapsed_seconds": 0.06830595800056471,
+          "max_peak_rss_mib": 219.515625
+        },
+        "quality": {
+          "median_elapsed_seconds": 0.07241512499967939,
+          "max_peak_rss_mib": 220.25
+        }
+      },
+      "trials": [
+        {
+          "ingest": {
+            "elapsed_seconds": 0.9712493750012072,
+            "peak_rss_mib": 168.9375,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 0.9444283330012695,
+            "peak_rss_mib": 207.546875,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.0664474169989262,
+            "peak_rss_mib": 212.1875,
+            "result": {
+              "messages": 10500,
+              "versions": 10599
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.0709102079999866,
+            "peak_rss_mib": 220.25,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 210,
+                  "versions": 210,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 10500,
+                  "versions": 10599,
+                  "missing_occurred_at_versions": 529,
+                  "missing_known_at_versions": 1050,
+                  "text_versions": 10176,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 423,
+                  "unsupported_content_types": {
+                    "multimodal_text": 423
+                  }
+                },
+                "evidence": 20910
+              }
+            }
+          }
+        },
+        {
+          "ingest": {
+            "elapsed_seconds": 0.9988552920003713,
+            "peak_rss_mib": 173.546875,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 0.996524624999438,
+            "peak_rss_mib": 200.796875,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.06830595800056471,
+            "peak_rss_mib": 215.703125,
+            "result": {
+              "messages": 10500,
+              "versions": 10599
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.07743945899892424,
+            "peak_rss_mib": 219.84375,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 210,
+                  "versions": 210,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 10500,
+                  "versions": 10599,
+                  "missing_occurred_at_versions": 529,
+                  "missing_known_at_versions": 1050,
+                  "text_versions": 10176,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 423,
+                  "unsupported_content_types": {
+                    "multimodal_text": 423
+                  }
+                },
+                "evidence": 20910
+              }
+            }
+          }
+        },
+        {
+          "ingest": {
+            "elapsed_seconds": 1.0218243330000405,
+            "peak_rss_mib": 180.328125,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 0.9869047499996668,
+            "peak_rss_mib": 204.15625,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.06980287499936821,
+            "peak_rss_mib": 219.515625,
+            "result": {
+              "messages": 10500,
+              "versions": 10599
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.07241512499967939,
+            "peak_rss_mib": 216.109375,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 210,
+                  "versions": 210,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 10500,
+                  "versions": 10599,
+                  "missing_occurred_at_versions": 529,
+                  "missing_known_at_versions": 1050,
+                  "text_versions": 10176,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 423,
+                  "unsupported_content_types": {
+                    "multimodal_text": 423
+                  }
+                },
+                "evidence": 20910
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "base_messages": 50000,
+        "added_messages": 2500,
+        "edited_messages": 495,
+        "logical_messages": 52500,
+        "message_versions": 52995,
+        "conversations": 1050,
+        "evidence": 104550,
+        "body_chars": 256,
+        "zip_bytes": 58102074,
+        "json_bytes": 58101806
+      },
+      "summary": {
+        "ingest": {
+          "median_elapsed_seconds": 5.929245167000772,
+          "max_peak_rss_mib": 535.40625
+        },
+        "repeat_ingest": {
+          "median_elapsed_seconds": 5.8355894580017775,
+          "max_peak_rss_mib": 634.390625
+        },
+        "query": {
+          "median_elapsed_seconds": 0.22582791700006055,
+          "max_peak_rss_mib": 546.96875
+        },
+        "quality": {
+          "median_elapsed_seconds": 0.22216054199998325,
+          "max_peak_rss_mib": 576.140625
+        }
+      },
+      "trials": [
+        {
+          "ingest": {
+            "elapsed_seconds": 5.763736959001108,
+            "peak_rss_mib": 473.546875,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 5.69794733299932,
+            "peak_rss_mib": 616.84375,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.22582791700006055,
+            "peak_rss_mib": 522.203125,
+            "result": {
+              "messages": 52500,
+              "versions": 52995
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.22216054199998325,
+            "peak_rss_mib": 576.140625,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 1050,
+                  "versions": 1050,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 52500,
+                  "versions": 52995,
+                  "missing_occurred_at_versions": 2649,
+                  "missing_known_at_versions": 5250,
+                  "text_versions": 50876,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 2119,
+                  "unsupported_content_types": {
+                    "multimodal_text": 2119
+                  }
+                },
+                "evidence": 104550
+              }
+            }
+          }
+        },
+        {
+          "ingest": {
+            "elapsed_seconds": 5.929245167000772,
+            "peak_rss_mib": 535.40625,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 5.8355894580017775,
+            "peak_rss_mib": 634.390625,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.22505266699954518,
+            "peak_rss_mib": 508.515625,
+            "result": {
+              "messages": 52500,
+              "versions": 52995
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.21450295800059394,
+            "peak_rss_mib": 540.203125,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 1050,
+                  "versions": 1050,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 52500,
+                  "versions": 52995,
+                  "missing_occurred_at_versions": 2649,
+                  "missing_known_at_versions": 5250,
+                  "text_versions": 50876,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 2119,
+                  "unsupported_content_types": {
+                    "multimodal_text": 2119
+                  }
+                },
+                "evidence": 104550
+              }
+            }
+          }
+        },
+        {
+          "ingest": {
+            "elapsed_seconds": 6.061226791000081,
+            "peak_rss_mib": 525.234375,
+            "result": {
+              "created": [
+                true,
+                true
+              ]
+            }
+          },
+          "repeat_ingest": {
+            "elapsed_seconds": 5.969575249999252,
+            "peak_rss_mib": 579.140625,
+            "result": {
+              "created": [
+                false,
+                false
+              ]
+            }
+          },
+          "query": {
+            "elapsed_seconds": 0.22896199999922828,
+            "peak_rss_mib": 546.96875,
+            "result": {
+              "messages": 52500,
+              "versions": 52995
+            }
+          },
+          "quality": {
+            "elapsed_seconds": 0.23779350000040722,
+            "peak_rss_mib": 567.0625,
+            "result": {
+              "selected_partitions": 2,
+              "filters": {
+                "source": null,
+                "collector_version": null,
+                "parser_version": null,
+                "schema_version": null
+              },
+              "quality": {
+                "status": "warning",
+                "conversations": {
+                  "identities": 1050,
+                  "versions": 1050,
+                  "missing_occurred_at_versions": 0,
+                  "missing_known_at_versions": 0
+                },
+                "messages": {
+                  "identities": 52500,
+                  "versions": 52995,
+                  "missing_occurred_at_versions": 2649,
+                  "missing_known_at_versions": 5250,
+                  "text_versions": 50876,
+                  "empty_text_versions": 0,
+                  "unsupported_content_versions": 2119,
+                  "unsupported_content_types": {
+                    "multimodal_text": 2119
+                  }
+                },
+                "evidence": 104550
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
