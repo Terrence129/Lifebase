@@ -20,7 +20,7 @@ HumanOS    → 交互：Search / Timeline / Trips / Past Me / AI（长期规划�
 
 ### 当前阶段
 
-更新日期：**2026-10-05**。当前处于首条 ChatGPT 导入链路的原型与可靠性验证阶段；
+更新日期：**2026-10-06**。当前处于首条 ChatGPT 导入链路的原型与可靠性验证阶段；
 以下完成状态以现有实现、合成测试及本地验收为依据，不代表真实官方导出已通过验收。
 
 维护约定（防膨胀）：本表与下方「待验证」「下一步」清单**只保留当前阶段的在研内容**；
@@ -37,18 +37,13 @@ ADR 与 git 历史；「最近本地验证」只保留最近一次结果，历�
 | Build + Reuse（DuckDB、pytest、Python 标准库） | quality：导入与汇总质量统计；合成规模工具与基线 | 区分身份、版本、缺失时间及不支持内容；三档规模各运行三次，见 [基线](benchmarks/README.md) 与 [ADR-010](adr/ADR-010-导入质量报告与合成规模基线.md) |
 | Build + Reuse（现有 collector、CLI、pytest） | 来源注册表：`sync/collectors/__init__.py` 按 source_type 路由 collector（make_collector / metadata_for / detect_collector），pipeline / CLI / rebuild 不再硬编码 ChatGPTCollector | 行为不变；单 collector 时未知前缀回退，多 collector 时报错；9 项注册表测试覆盖，第二来源可插拔接入 |
 | Build（标准库 + pytest，无新依赖） | 约束门禁：红线短语唯一归属、`.md` 链接有效性、`.gitignore` 覆盖、层级边界检查（`tests/unit/test_constraints.py`）；AGENTS.md §3 表格绑定执行门禁；ADR 骨架补「被否方案」；清理 context.md 与 fixtures/README 的红线复述 | 门禁随 pytest 与 CI 自动执行；见 [ADR-011](adr/ADR-011-约束门禁与文档防漂移.md) |
+| Build（标准库 + pytest，无新依赖） | 来源外发策略：`sync/base.py` 定义 `local_only` / `redact_before_cloud` / `cloud_ok`，collector 在 metadata 声明来源默认值（ChatGPT 为 `local_only`）；Agent 运行时集成边界定为单向依赖、只读查询接口 | 仅声明，尚无执行方；门禁 `test_registered_collectors_declare_egress_policy`；见 [ADR-012](adr/ADR-012-来源外发策略.md)、[ADR-013](adr/ADR-013-Agent运行时集成边界.md) |
 
-最近本地验证（2026-10-05，conda `lifebase` 环境，Windows 原生）：`ruff check .`
-通过，`pytest` **95 项通过、4 项跳过**（4 项符号链接测试因 Windows 无创建权限
-跳过，Linux/CI 上全量执行 99 项）。本次同步：新增 6 项约束门禁测试（红线唯一
-归属、md 链接、gitignore 覆盖、层级边界、禁止项目级 `.venv`，见
-[ADR-011](adr/ADR-011-约束门禁与文档防漂移.md)）；
-发现并解决 tzdata 缺失导致的 pyarrow 时间戳测试失败（tzdata 已加入项目依赖，
-仅 Windows 平台安装）；删除项目级 `.venv`（其 Python 3.14.4 让 `uv run` 绕过
-conda 环境），开发与校验一律在 conda `lifebase` 环境内进行，已写入 AGENTS.md §6。
-CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录本地结果，不声称已核对
-每次远端 CI 运行。CI 首次运行发现 `.venv` 门禁在 runner 误报（uv 默认在仓库内
-建 `.venv`），已通过 `UV_PROJECT_ENVIRONMENT` 把 CI 环境移到仓库外修复。
+最近本地验证（2026-10-06，conda `lifebase` 环境，macOS）：`ruff check .` 通过，
+`pytest` **101 项全部通过**。本次同步：新增来源外发策略声明与 2 项注册表测试
+（[ADR-012](adr/ADR-012-来源外发策略.md)），记录 Agent 运行时集成边界
+（[ADR-013](adr/ADR-013-Agent运行时集成边界.md)）。此处记录本地结果，不声称已核对
+每次远端 CI 运行。
 完整规模基准按需执行，CI 仅运行小样例正确性检查。
 
 ### 待验证事项与阻塞
@@ -81,6 +76,8 @@ CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录
 - **采集方式优先级**：官方 API/OAuth > 官方导出 > 本地文件/数据库 > 现有开源提取器 > 用户触发的浏览器自动化 > 逆向。追求「可复现的采集」，不是「完美的采集」。
 - **存储栈**：本地文件系统 + 内容寻址对象存储 + Parquet + DuckDB + SQLite。PostgreSQL/pgvector 后期再引入；不为「可能以后需要」提前引入依赖。
 - **备份**：复用 restic，禁止自研加密/备份层。
+- **外发策略**：每个 collector 声明来源默认外发级别（`local_only` / `redact_before_cloud` / `cloud_ok`），未来的查询接口与模型路由据此执行（ADR-012）。
+- **Agent 运行时边界**：Agent 执行由外部运行时承担；Lifebase 不依赖任何运行时，只对外提供只读查询接口；AI 生成内容不作为关于用户现实生活的事实证据（ADR-013）。
 - **项目命名**：伞形名 **Lifebase**（包名 `lifebase`、CLI 命令 `lifebase`）；四层保留原名 LifeSync / LifeVault / LifeGraph / HumanOS，对应子包 `sync/` `vault/` `graph/` `humanos/`（ADR-002）。
 
 ## 4. 目录速查
@@ -102,3 +99,4 @@ CI 已配置同样检查，包含 RAW 哈希与导入幂等测试；此处记录
 
 - [Nango：LifeSync API 接入候选](design/nango-integration-hypothesis.md) — **Defer**。当多个 OAuth 来源的持续同步产生重复维护成本时，再评估以 **Integrate** 方式接入 Nango；记录适用场景、部署取舍、证据保留问题和重新评估条件，尚未选型或接入。
 - [浏览器辅助采集：从已登录的 App 获取可归档数据](design/doubao-browser-collection-hypothesis.md) — **待验证灵感 / Defer**。以 doubao-helper 为样例研究页面接口采集思路；验证后可作为 LifeSync 的可选输入，完整响应先归档再解析。
+- [Agent 运行时集成：DeepSeek Harness × Lifebase](design/agent-runtime-integration-hypothesis.md) — **Defer**。Agent 执行交外部运行时（**Integrate**），Lifebase 只提供数据与证据；记录七个集成方向、评估意见与触发条件，边界已定于 [ADR-013](adr/ADR-013-Agent运行时集成边界.md)。

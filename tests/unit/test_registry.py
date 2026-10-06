@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from lifebase.sync.base import EGRESS_POLICIES
 from lifebase.sync.collectors import (
     COLLECTORS,
     detect_collector,
@@ -74,3 +75,13 @@ def test_registered_collectors_have_consistent_version_prefix() -> None:
         meta = cls(f"{name}:check").metadata()
         assert meta["source_type"] == name
         assert meta["collector_version"].startswith(f"{name}@")
+
+
+def test_registered_collectors_declare_egress_policy() -> None:
+    """ADR-012：每个 collector 必须声明合法的来源默认外发策略。"""
+    for name, cls in COLLECTORS.items():
+        assert cls(f"{name}:check").metadata().get("egress_policy") in EGRESS_POLICIES, name
+
+
+def test_chatgpt_defaults_to_local_only() -> None:
+    assert metadata_for("chatgpt:personal")["egress_policy"] == "local_only"

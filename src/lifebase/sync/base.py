@@ -13,7 +13,16 @@ Collector 不直接写应用数据库 —— 数据流：
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol, get_args
+
+# 外发策略（ADR-012）：该来源数据能否离开本机、发送给云端模型。
+#   local_only          只允许本地处理与本地模型
+#   redact_before_cloud 脱敏或摘要后才可发送给云端
+#   cloud_ok            可直接发送给云端
+# 每个 collector 在 metadata()["egress_policy"] 声明来源默认值；执行方是未来的
+# 查询接口 / agent 集成，当前阶段尚无消费方。
+EgressPolicy = Literal["local_only", "redact_before_cloud", "cloud_ok"]
+EGRESS_POLICIES: tuple[str, ...] = get_args(EgressPolicy)
 
 
 class Collector(Protocol):
@@ -38,5 +47,5 @@ class Collector(Protocol):
         ...
 
     def metadata(self) -> dict[str, Any]:
-        """返回 collector 元信息（名称、版本、来源类型）。"""
+        """返回 collector 元信息（名称、版本、来源类型、外发策略 egress_policy）。"""
         ...
