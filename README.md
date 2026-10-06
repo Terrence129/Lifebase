@@ -19,16 +19,19 @@ RAW 归档 → canonical v1 → Parquet → DuckDB 查询；已实现
 `ingest`、`list`、`query`、`verify`、`rebuild`、`quality` 六个 CLI 命令，
 collector 经来源注册表（`sync/collectors/__init__.py`）路由，支持目录导入及多来源重放。
 
-最近本地验证记录（2026-10-06，macOS，conda `lifebase`）：ruff 检查通过，
-176 项测试全部通过。已记录 1,000 / 10,000 /
-50,000 基础消息的合成规模基线。collector/parser `chatgpt@0.2.0` 支持编号会话文件、
+已记录 1,000 / 10,000 / 50,000 基础消息的合成规模基线。
+collector/parser `chatgpt@0.2.0` 支持编号会话文件、
 仅 parent 的节点及混合内容中的字符串。单份真实导出已完成 125 个会话、5,882 条
 消息与 6,007 条证据的导入、完整性检查、聚合查询、重复导入和重放验收。
 doubao@0.1.0 的三份本地导出包含 3 个会话、5,266 条消息、5,269 条证据，重复导入
 和混合来源重放保持持久化文件不变。全部数据检查没有错误；合并仓库 verify 为 warning，
 仅因两个已有 Finder .DS_Store 文件。豆包会话时间、回复关系与覆盖范围仍有缺口。
-自动采集、LifeGraph 和 HumanOS 尚未实现。完整进度、待验证事项与下一步见
-[当前阶段](docs/reference.md#2-项目背景与当前阶段)。
+LifeGraph 的自动关键词图谱及 HumanOS 数据接口已实现：`graph build/status`、
+`topics`、`search`、`timeline`、`evidence`、`context`，支持可读终端和 JSON v1。
+真实本地库的 128 个会话、11,148 条消息已构图；RAW/Silver/索引保持原状。
+HumanOS 当前准备证据上下文，尚无模型生成回答；开发在 Harness 联调前停止。
+完整验收、待验证事项与下一步见 [当前阶段](docs/reference.md#2-项目背景与当前阶段)，
+接入方式见 [Harness 接口说明](docs/harness-interface.md)。
 
 ## 快速开始
 
@@ -77,6 +80,21 @@ uv run pytest
 ```
 
 ### 导入与查询
+
+想先体验当前功能，可跟随 [双来源终端演示](docs/demo.md)：使用合成 ChatGPT / Doubao
+样例，在 `~/Lifebase-demo` 里自动构图、读会话、搜索主题、按时间筛选、追溯证据、
+准备上下文，以及验证重复导入与构图。初始样例有 3 个会话、8 条消息、11 条证据；
+演示约需 10–15 分钟，依赖已包含锁定的 jieba。
+
+```bash
+lifebase --data-dir ~/Lifebase-demo graph build
+lifebase --data-dir ~/Lifebase-demo search "野餐"
+lifebase --data-dir ~/Lifebase-demo context "野餐有哪些讨论？" --format json
+```
+
+Gold 使用独立 Parquet 快照；新输入使旧图谱过期，需要显式 `graph build`。
+`verify` 检查 RAW/Silver，`graph status` 检查 Gold。统计主题不做语义融合，消息时间、
+角色及内容版本保持可见。后续范围见 [切片与联调交接](docs/design/post-collector-roadmap-proposal.md)。
 
 进入开发环境后，先用仓库内的合成样例试跑；输出目录放在仓库外：
 
