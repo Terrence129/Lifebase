@@ -75,14 +75,15 @@ lifebase_demo search "synthetic-unmatched-topic"
 `generated_answer` 为 null；此时交付的是证据，不是 AI 回答。无命中会返回 empty
 与证据不足提醒，退出码仍为零。统计关键词不会识别所有同义词或复杂自然语言条件。
 
-检查云端目的地请求的拒绝行为：
+检查云端目的地请求：
 
 ```bash
 lifebase_demo context "野餐" --destination cloud --format json
 ```
 
-预期退出码一，error.code=EGRESS_BLOCKED，不返回消息。两条来源默认都是 local_only，
-合成库也沿用这个来源默认值。接口目前不提供策略覆盖或脱敏选项。
+预期退出码零，data.destination 为 cloud。两条来源的默认外发级别是 cloud_ok（ADR-018），
+合成库与真实库都按来源类型默认值执行。目的地由调用方声明，接口不做网络隔离，实际路由
+仍由消费方保证一致。接口目前不提供按来源或按库的覆盖与脱敏选项。
 
 ## 5. 完整性与更新
 

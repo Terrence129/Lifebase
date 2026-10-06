@@ -85,14 +85,15 @@ def test_registered_collectors_declare_egress_policy() -> None:
         assert cls(f"{name}:check").metadata().get("egress_policy") in EGRESS_POLICIES, name
 
 
-def test_chatgpt_defaults_to_local_only() -> None:
-    assert metadata_for("chatgpt:personal")["egress_policy"] == "local_only"
+def test_chatgpt_defaults_to_cloud_ok() -> None:
+    """ADR-018：聊天来源默认外发级别放宽为云端可用。"""
+    assert metadata_for("chatgpt:personal")["egress_policy"] == "cloud_ok"
 
 
-def test_doubao_is_registered_and_defaults_to_local_only() -> None:
+def test_doubao_is_registered_and_defaults_to_cloud_ok() -> None:
     assert source_type("doubao:personal") == "doubao"
     meta = metadata_for("doubao:personal")
-    assert meta["source_type"] == "doubao" and meta["egress_policy"] == "local_only"
+    assert meta["source_type"] == "doubao" and meta["egress_policy"] == "cloud_ok"
 
 
 def test_archive_hint_cannot_conflict_with_registered_source_prefix() -> None:

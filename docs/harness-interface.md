@@ -70,7 +70,8 @@ GRAPH_INVALID、INPUT_INVALID、INVALID_REQUEST、EGRESS_BLOCKED。
 目的地门禁在 Lifebase 侧执行：cloud 要求整份图谱的输入来源全部为 cloud_ok。
 local_only、未知策略和没有脱敏器的 redact_before_cloud 都拒绝云端请求。
 `--source` 不缩小快照身份和全局统计的派生来源范围，因此不能绕过门禁。
-当前 ChatGPT、豆包的默认策略都为 local_only。
+当前 ChatGPT、豆包的默认策略为 cloud_ok（ADR-018），云端模型可直接消费这些工具；
+改回 local_only 即恢复拒绝。
 
 这里检查的是调用方声明的目的地，不是操作系统网络隔离。Harness 即使运行在本机，
 调用云端 DeepSeek API 仍是 cloud；不能为获取数据而填写 local。

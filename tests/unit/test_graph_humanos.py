@@ -24,7 +24,6 @@ from lifebase.humanos import HumanOS, ToolError
 from lifebase.humanos.policy import enforce_destination
 from lifebase.humanos.service import parse_time
 from lifebase.sync.collectors import COLLECTORS
-from lifebase.sync.collectors.chatgpt import ChatGPTCollector
 from lifebase.sync.collectors.doubao import DoubaoCollector
 from lifebase.sync.pipeline import ingest_file
 from lifebase.sync.verification import verify
@@ -287,19 +286,28 @@ def test_invalid_queries_and_literal_sql_input(mixed: Path) -> None:
             build_graph(mixed, keyword_count)
 
 
-def test_destination_policy_and_filtered_cloud_request(mixed: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_destination_policy_and_filtered_cloud_request(
+        mixed: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     build_graph(mixed)
-    original = ChatGPTCollector.metadata
-    monkeypatch.setattr(ChatGPTCollector, "metadata", lambda self: original(self) | {"egress_policy": "cloud_ok"})
-    with pytest.raises(ToolError, match="受限来源"):
-        HumanOS(mixed, "cloud")
-    original_doubao = DoubaoCollector.metadata
-    monkeypatch.setattr(DoubaoCollector, "metadata", lambda self: original_doubao(self) | {"egress_policy": "cloud_ok"})
+    # ADR-018：聊天来源默认 cloud_ok，云端目的地直接可用。
     with HumanOS(mixed, "cloud") as service:
         assert service.context("野餐", source=CHATGPT).status == "ok"
-    monkeypatch.setattr(DoubaoCollector, "metadata", lambda self: original_doubao(self) | {"egress_policy": "redact_before_cloud"})
+    # 任一下级来源被降级，整份快照即拒绝云端；来源筛选不能绕过。
+    original_doubao = DoubaoCollector.metadata
+    monkeypatch.setattr(DoubaoCollector, "metadata",
+                        lambda self: original_doubao(self) | {"egress_policy": "local_only"})
+    with pytest.raises(ToolError, match="受限来源"):
+        HumanOS(mixed, "cloud")
+    code = run(["--data-dir", str(mixed), "context", "野餐", "--destination", "cloud",
+                "--source", CHATGPT, "--format", "json"])
+    assert code == 1
+    assert json.loads(capsys.readouterr().out)["error"]["code"] == "EGRESS_BLOCKED"
+    # 没有脱敏器时 redact_before_cloud 同样拒绝。
+    monkeypatch.setattr(DoubaoCollector, "metadata",
+                        lambda self: original_doubao(self) | {"egress_policy": "redact_before_cloud"})
     with pytest.raises(ToolError):
         HumanOS(mixed, "cloud")
+    # 未知来源类型与非法目的地仍然拒绝。
     with pytest.raises(ToolError):
         enforce_destination({"synthetic": "unknown"}, "local")
     with pytest.raises(ToolError):
@@ -315,9 +323,9 @@ def test_legacy_source_uses_registered_type(tmp_path: Path, monkeypatch: pytest.
     build_graph(root)
     with HumanOS(root) as service:
         assert service.search("野餐", source="synthetic-legacy-account").status == "ok"
-    with pytest.raises(ToolError) as caught:
-        HumanOS(root, "cloud")
-    assert caught.value.code == "EGRESS_BLOCKED"
+    # 未加类型前缀的历史来源同样解析到已登记类型，云端目的地也可用。
+    with HumanOS(root, "cloud") as service:
+        assert service.search("野餐", source="synthetic-legacy-account").status == "ok"
 
 
 def test_tools_do_not_read_raw(mixed: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -349,8 +357,8 @@ def test_json_cli_contract_readable_output_and_errors(mixed: Path, capsys: pytes
                  ("evidence", match["evidence"][0]["evidence_id"])):
         assert call(*args)[0] == 0
     code, value = call("context", "野餐", "--destination", "cloud", "--source", CHATGPT)
-    assert code == 1 and value["error"]["code"] == "EGRESS_BLOCKED"
-    assert "matches" not in value["data"]
+    assert code == 0 and value["status"] == "ok"
+    assert value["data"]["destination"] == "cloud" and value["data"]["matches"]
     assert call("search", "野餐", "--limit", "0")[1]["error"]["code"] == "INVALID_REQUEST"
     assert run(["search", "野餐", "--data-dir", str(mixed)]) == 0
     assert "图谱路径" in capsys.readouterr().out

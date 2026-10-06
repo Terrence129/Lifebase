@@ -22,7 +22,9 @@ pipeline 协调归档、Silver 发布与来源登记；实施边界见 [AGENTS.m
 ### 当前阶段
 
 更新日期：2026-10-06。双来源自动关键词图谱与 HumanOS 只读工具已经实现，当前停在
-Harness 联调交接点。没有修改、启动或调用 Harness，也没有模型生成回答。
+Harness 联调交接点。没有修改、启动或调用 Harness，也没有模型生成回答。同日聊天来源的
+默认外发级别由 `local_only` 放宽为 `cloud_ok`，合成库与真实库一致生效，见
+[ADR-018](adr/ADR-018-聊天来源默认外发策略放宽.md)。
 
 阶段历史：2026-10-06，ChatGPT 原型与本地验收完成，见
 [ADR-006](adr/ADR-006-首个采集切片的最小输出契约.md)、
@@ -34,7 +36,8 @@ Harness 联调交接点。没有修改、启动或调用 Harness，也没有模�
 同日豆包与混合来源验收完成，见 [ADR-015](adr/ADR-015-豆包JSON导入与多来源重放.md)；
 Gold 与 Harness 就绪接口的切片见 [ADR-016](adr/ADR-016-聊天图谱与Harness就绪接口.md)。
 同日真实库、合成库及来源导出迁入独立 private 数据仓库并完成同步，见
-[ADR-017](adr/ADR-017-独立私有数据仓库与无损迁移.md)。
+[ADR-017](adr/ADR-017-独立私有数据仓库与无损迁移.md)。同日聊天来源默认外发级别放宽为
+云端可用，见 [ADR-018](adr/ADR-018-聊天来源默认外发策略放宽.md)。
 
 最近本地验收（2026-10-06，conda lifebase，macOS）：两条来源的 128 个会话、11,148 条
 消息形成 22,059 个节点、49,183 条关系，包含 10,781 个关键词主题与 37,907 条提及关系。
@@ -81,7 +84,7 @@ RAW/Silver 检查均为 ok。操作见 [终端指南](demo.md)，正式 JSON 契
 - **采集方式优先级**：官方 API/OAuth > 官方导出 > 本地文件/数据库 > 现有开源提取器 > 用户触发的浏览器自动化 > 逆向。追求「可复现的采集」，不是「完美的采集」。
 - **存储栈**：本地文件系统 + 内容寻址对象存储 + Parquet + DuckDB + SQLite。PostgreSQL/pgvector 后期再引入；不为「可能以后需要」提前引入依赖。
 - **备份**：复用 restic，禁止自研加密/备份层。
-- **外发策略**：每个 collector 声明来源默认外发级别（`local_only` / `redact_before_cloud` / `cloud_ok`），HumanOS 按目的地声明执行，实际模型路由待联调（ADR-012 / ADR-016）。
+- **外发策略**：每个 collector 声明来源默认外发级别（`local_only` / `redact_before_cloud` / `cloud_ok`），HumanOS 按目的地声明执行，实际模型路由待联调（ADR-012 / ADR-016）。聊天来源的默认级别自 2026-10-06 起为 `cloud_ok`（ADR-018）。
 - **Agent 运行时边界**：Agent 执行由外部运行时承担；Lifebase 不依赖任何运行时，只对外提供只读查询接口；AI 生成内容不作为关于用户现实生活的事实证据（ADR-013）。
 - **项目命名**：伞形名 **Lifebase**（包名 `lifebase`、CLI 命令 `lifebase`）；四层保留原名 LifeSync / LifeVault / LifeGraph / HumanOS，对应子包 `sync/` `vault/` `graph/` `humanos/`（ADR-002）。
 
