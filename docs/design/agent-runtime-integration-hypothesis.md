@@ -1,8 +1,8 @@
 # Agent 运行时集成：DeepSeek Harness × Lifebase
 
-- 状态：待评估的架构猜想，尚未选型或接入。
-- 记录日期：2026-10-06。
-- 当前分类：**Defer**；Agent 执行若落地，按 **Integrate** 方式接入外部运行时。
+- 状态：方向 1（Lifebase 工具）已接入并跑通首个垂直切片；其余方向仍是待评估猜想。
+- 记录日期：2026-10-06；最近更新 2026-10-07。
+- 当前分类：方向 1 为 **Integrate**（已落地）；其余方向 **Defer**。
 - 来源：用户构想稿《DeepSeek Harness × Lifebase：Personal Agent Runtime 构想》（2026-10-06，仓库外原稿），本页为浓缩整理，非原文。
 - 项目约束统一见 [AGENTS.md](../../AGENTS.md)。已定的边界见 [ADR-013](../adr/ADR-013-Agent运行时集成边界.md)，外发级别见 [ADR-012](../adr/ADR-012-来源外发策略.md)；本页其余内容不构成决策。
 
@@ -21,7 +21,7 @@ fork 的维护原则是尽量不改 Harness 核心，通过插件、Profile 与�
 
 | # | 方向 | 要点 | 依赖的 Lifebase 能力 |
 | --- | --- | --- | --- |
-| 1 | Lifebase 工具 | `search_life` / `get_timeline` / `get_person` / `explain_claim` 等工具，回答附来源 | 只读查询接口、Evidence |
+| 1 | Lifebase 工具（已落地） | 实际交付的是 `lifebase_topics` / `search` / `timeline` / `evidence` / `context` 五个工具，名称按 Lifebase 命令而非构想稿示例 | 只读查询接口、Evidence |
 | 2 | 个人上下文提供方 | 每次请求前按问题检索相关的人、事件、项目、过往决策并注入上下文 | LifeGraph、外发执行层 |
 | 3 | 带证据的个人 Agent | 回答拆成 Claim + Evidence + Provenance，可点开「为什么这么认为」 | Evidence 定位、Gold 断言 |
 | 4 | Past Me 运行时 | `past-me-2022` 之类的 Profile，按 `known_at <= 截止点` 隔离知识；延伸为多个历史自我对话 | `known_at` 语义、自我快照 |
@@ -41,7 +41,13 @@ fork 的维护原则是尽量不改 Harness 核心，通过插件、Profile 与�
 - **第三方内容**：聊天类来源默认级别见 [ADR-012](../adr/ADR-012-来源外发策略.md)；
   2026-10-06 起默认放宽为 `cloud_ok`（[ADR-018](../adr/ADR-018-聊天来源默认外发策略放宽.md)），
   不再是显式配置。
-- **未核实**：Harness 的扩展点、稳定性与许可证均来自构想稿的描述，正式集成前需要核对 upstream。
+- **已核实（2026-10-07）**：扩展点按 fork 源码核对完毕——宿主 bundle 只需
+  `package.json` 的 `dsh.bundle.patch` 加一份 patch 层，插件可以是零构建的纯 ESM；
+  `apply` 允许异步；子进程经 `ctx.subprocess` 启动，显式 argv、字节上限与 `graceMs`
+  都有对应配置。落地形态、五个工具与端到端结果见 [接口说明](../harness-interface.md)。
+  许可证与 upstream 长期同步策略仍未核对，留待需要提交上游时再评估。
+- **未核实**：方向 2 到 7（上下文提供方、证据层、隐私路由执行、Past Me、会话回采、
+  Agent 团队）依赖的能力仍未验证。
 
 ## Build / Reuse / Integrate / Defer
 
