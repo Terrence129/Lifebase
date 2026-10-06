@@ -1,0 +1,221 @@
+{
+  "tool": "context",
+  "status": "ok",
+  "snapshot_id": "cb2bc17b55045431a96df00f1519245346f64cfde29b6fd8d89e98382ce88944",
+  "data": {
+    "question": "野餐有哪些讨论？",
+    "total": 5,
+    "destination": "local",
+    "generated_answer": null,
+    "content_chars": 74,
+    "matches": [
+      {
+        "record_id": "sha256:0e75424f06b721073ac41b2138a10d6cd4c5f7a7ef08df68eb767363b38eaa64",
+        "revision_id": "sha256:61c670696250356ab85fe4a19a8b95719e5414e5f61e7720ec5ef21836d9011d",
+        "conversation_id": "sha256:e18b1dc2b9a485f7fbc5fc0f47622fc64e01d721c3ed29401bed3242044d4326",
+        "parent_record_id": null,
+        "source": "doubao:synthetic-account",
+        "role": "user",
+        "occurred_at": "2026-01-01T08:00:00+08:00",
+        "known_at": "2026-01-01T08:00:00+08:00",
+        "excerpt": "  合成问题：野餐带什么？\n",
+        "truncated": false,
+        "score": 5.56404446485,
+        "matched_topics": [
+          "野餐"
+        ],
+        "graph_path": {
+          "source_node_id": "sha256:dff4bffe427a3d83a46666057bb57f58e66140d9c5fbd70cd11d58ef02aeac7b",
+          "conversation_node_id": "sha256:0129db7725805aa35e6a3e2e7492d44084e9a4cb6aca823bdacaee04835e30b4",
+          "message_node_id": "sha256:b3f2e93dfd0bc3d55f166164fc198f52bb4c2f43bb809e713108709ef70e354e",
+          "topic_node_ids": [
+            "sha256:5e698b478c96ae259f5a1f5d36ea60b8afb44ee02f897a9ed6195ea9a54befe8"
+          ]
+        },
+        "evidence": [
+          {
+            "evidence_id": "sha256:1864101ad297ae1b35e5b99a7e62d6d21a60d0264a779f36c71a8cfe170881ea",
+            "record_kind": "artifact",
+            "record_id": "sha256:0e75424f06b721073ac41b2138a10d6cd4c5f7a7ef08df68eb767363b38eaa64",
+            "revision_id": "sha256:61c670696250356ab85fe4a19a8b95719e5414e5f61e7720ec5ef21836d9011d",
+            "source": "doubao:synthetic-account",
+            "source_record_id": "[\"artifact\",\"synthetic-doubao-conversation\",\"synthetic-user-1\"]",
+            "content_hash": "ac560fea856d6689b3ae63aba341be58a00b6a1bbedea204e4128e8aee03d007",
+            "raw_member": "",
+            "raw_member_hash": "ac560fea856d6689b3ae63aba341be58a00b6a1bbedea204e4128e8aee03d007",
+            "raw_pointer": "/messages/0",
+            "collector_version": "doubao@0.1.0",
+            "parser_version": "doubao@0.1.0"
+          }
+        ],
+        "version_conflict": false
+      },
+      {
+        "record_id": "sha256:fc6428b4e61cc7f5a3bcbe2dbe335c3d2c086b296a393535643a66cf47f6cb39",
+        "revision_id": "sha256:1ac185b32035cb242eea43ea546cac970cabe800183edf08b156eace25b6f89d",
+        "conversation_id": "sha256:a58da24bb428f610d5eb983b3f51aab138c942f67112adb4519a53cff1ddf726",
+        "parent_record_id": "sha256:37e4655fd3008687fbcb0811cfc92e40a1d6b396638cf216a768bb2068bdd1e3",
+        "source": "chatgpt:synthetic-account",
+        "role": "assistant",
+        "occurred_at": "2026-01-01T08:01:00+08:00",
+        "known_at": "2026-01-01T08:01:00+08:00",
+        "excerpt": "可以准备水、点心和野餐垫。",
+        "truncated": false,
+        "score": 3.709362976567,
+        "matched_topics": [
+          "野餐"
+        ],
+        "graph_path": {
+          "source_node_id": "sha256:e41b9982d98c2bddfd9d2431eacc93e61fc0dc10ec1acb5e52c0a1f79a40d77d",
+          "conversation_node_id": "sha256:ebf4811d2ab5e5dadcc94773c5bcb6632cd08ed635232325ce44cab66c97688e",
+          "message_node_id": "sha256:28b06087ee9be410a3732c32f010c7a8c1516c2c2af7d114dcced41dd3041ce9",
+          "topic_node_ids": [
+            "sha256:5e698b478c96ae259f5a1f5d36ea60b8afb44ee02f897a9ed6195ea9a54befe8"
+          ]
+        },
+        "evidence": [
+          {
+            "evidence_id": "sha256:fc2199a2e139772b41286abb5b2eea9c5163dc17b77ebd480427077191b1364e",
+            "record_kind": "artifact",
+            "record_id": "sha256:fc6428b4e61cc7f5a3bcbe2dbe335c3d2c086b296a393535643a66cf47f6cb39",
+            "revision_id": "sha256:1ac185b32035cb242eea43ea546cac970cabe800183edf08b156eace25b6f89d",
+            "source": "chatgpt:synthetic-account",
+            "source_record_id": "[\"artifact\",\"synthetic-conversation-1\",\"synthetic-message-2\"]",
+            "content_hash": "4343f91bd07018432999d29015e52f8b4e77b5c62e5d6bc06f1b2796d35f2fa4",
+            "raw_member": "conversations.json",
+            "raw_member_hash": "b65851330f1feeb455edb7e935aabada42c86d8266bcb03ea16adf4bf8e36db4",
+            "raw_pointer": "/0/mapping/node-1-assistant-a/message",
+            "collector_version": "chatgpt@0.2.0",
+            "parser_version": "chatgpt@0.2.0"
+          }
+        ],
+        "version_conflict": false
+      },
+      {
+        "record_id": "sha256:a146b0be923c10bc1c8774efc05f602b4fbb383ceee6ae3deae998a9bdfd141e",
+        "revision_id": "sha256:3972ef84d03f807c53ce45fd0b068f4caf3552041a5052c6983d46183ede6c88",
+        "conversation_id": "sha256:e18b1dc2b9a485f7fbc5fc0f47622fc64e01d721c3ed29401bed3242044d4326",
+        "parent_record_id": null,
+        "source": "doubao:synthetic-account",
+        "role": "assistant",
+        "occurred_at": "2026-01-01T08:01:00.123456+08:00",
+        "known_at": "2026-01-01T08:01:01+08:00",
+        "excerpt": "合成回复：带水和野餐垫。",
+        "truncated": false,
+        "score": 3.709362976567,
+        "matched_topics": [
+          "野餐"
+        ],
+        "graph_path": {
+          "source_node_id": "sha256:dff4bffe427a3d83a46666057bb57f58e66140d9c5fbd70cd11d58ef02aeac7b",
+          "conversation_node_id": "sha256:0129db7725805aa35e6a3e2e7492d44084e9a4cb6aca823bdacaee04835e30b4",
+          "message_node_id": "sha256:6aad191aa283b21245f6f95ad6d9033889f4776775e1fa392526b7ce5a7e93a1",
+          "topic_node_ids": [
+            "sha256:5e698b478c96ae259f5a1f5d36ea60b8afb44ee02f897a9ed6195ea9a54befe8"
+          ]
+        },
+        "evidence": [
+          {
+            "evidence_id": "sha256:1ae05320ff7b631c8b83902243bc3eb53e0ebb3c9b1b0967b21791ebd7f2aa10",
+            "record_kind": "artifact",
+            "record_id": "sha256:a146b0be923c10bc1c8774efc05f602b4fbb383ceee6ae3deae998a9bdfd141e",
+            "revision_id": "sha256:3972ef84d03f807c53ce45fd0b068f4caf3552041a5052c6983d46183ede6c88",
+            "source": "doubao:synthetic-account",
+            "source_record_id": "[\"artifact\",\"synthetic-doubao-conversation\",\"synthetic-assistant-1\"]",
+            "content_hash": "ac560fea856d6689b3ae63aba341be58a00b6a1bbedea204e4128e8aee03d007",
+            "raw_member": "",
+            "raw_member_hash": "ac560fea856d6689b3ae63aba341be58a00b6a1bbedea204e4128e8aee03d007",
+            "raw_pointer": "/messages/1",
+            "collector_version": "doubao@0.1.0",
+            "parser_version": "doubao@0.1.0"
+          }
+        ],
+        "version_conflict": false
+      },
+      {
+        "record_id": "sha256:37e4655fd3008687fbcb0811cfc92e40a1d6b396638cf216a768bb2068bdd1e3",
+        "revision_id": "sha256:0f9d95f233d60e5f74d168d6d719a459b521bc873c52f071e17f3a98e223d392",
+        "conversation_id": "sha256:a58da24bb428f610d5eb983b3f51aab138c942f67112adb4519a53cff1ddf726",
+        "parent_record_id": null,
+        "source": "chatgpt:synthetic-account",
+        "role": "user",
+        "occurred_at": "2026-01-01T08:00:00+08:00",
+        "known_at": "2026-01-01T08:00:00+08:00",
+        "excerpt": "帮我列一份野餐用品清单。",
+        "truncated": false,
+        "score": 2.22561778594,
+        "matched_topics": [
+          "野餐"
+        ],
+        "graph_path": {
+          "source_node_id": "sha256:e41b9982d98c2bddfd9d2431eacc93e61fc0dc10ec1acb5e52c0a1f79a40d77d",
+          "conversation_node_id": "sha256:ebf4811d2ab5e5dadcc94773c5bcb6632cd08ed635232325ce44cab66c97688e",
+          "message_node_id": "sha256:36ccbaedff40b8cff9c07f619349c2a482543f48d073983f7d540955edd21f55",
+          "topic_node_ids": [
+            "sha256:5e698b478c96ae259f5a1f5d36ea60b8afb44ee02f897a9ed6195ea9a54befe8"
+          ]
+        },
+        "evidence": [
+          {
+            "evidence_id": "sha256:27b86e398dcd86dcb42fbe3faf5416fdc1ec47652142f3f955b4f08ae21755fb",
+            "record_kind": "artifact",
+            "record_id": "sha256:37e4655fd3008687fbcb0811cfc92e40a1d6b396638cf216a768bb2068bdd1e3",
+            "revision_id": "sha256:0f9d95f233d60e5f74d168d6d719a459b521bc873c52f071e17f3a98e223d392",
+            "source": "chatgpt:synthetic-account",
+            "source_record_id": "[\"artifact\",\"synthetic-conversation-1\",\"synthetic-message-1\"]",
+            "content_hash": "4343f91bd07018432999d29015e52f8b4e77b5c62e5d6bc06f1b2796d35f2fa4",
+            "raw_member": "conversations.json",
+            "raw_member_hash": "b65851330f1feeb455edb7e935aabada42c86d8266bcb03ea16adf4bf8e36db4",
+            "raw_pointer": "/0/mapping/node-1-user/message",
+            "collector_version": "chatgpt@0.2.0",
+            "parser_version": "chatgpt@0.2.0"
+          }
+        ],
+        "version_conflict": false
+      },
+      {
+        "record_id": "sha256:934e6f288695e680c1205913d3ba83c3d6bf802d81c38206a0207f65b21c74ca",
+        "revision_id": "sha256:93a42300faff73bf33532d667fbc9304b0568881a05c7c456c87dbe6eda19ff9",
+        "conversation_id": "sha256:a58da24bb428f610d5eb983b3f51aab138c942f67112adb4519a53cff1ddf726",
+        "parent_record_id": "sha256:37e4655fd3008687fbcb0811cfc92e40a1d6b396638cf216a768bb2068bdd1e3",
+        "source": "chatgpt:synthetic-account",
+        "role": "assistant",
+        "occurred_at": "2026-01-01T08:02:00+08:00",
+        "known_at": "2026-01-01T08:02:00+08:00",
+        "excerpt": "可以准备水、点心和野餐垫。\n出发前再检查天气。",
+        "truncated": false,
+        "score": 1.854681488283,
+        "matched_topics": [
+          "野餐"
+        ],
+        "graph_path": {
+          "source_node_id": "sha256:e41b9982d98c2bddfd9d2431eacc93e61fc0dc10ec1acb5e52c0a1f79a40d77d",
+          "conversation_node_id": "sha256:ebf4811d2ab5e5dadcc94773c5bcb6632cd08ed635232325ce44cab66c97688e",
+          "message_node_id": "sha256:887e21c6043ae89d4cb4d6fcfb8e9c9703516b8e1ae760cc4e0616b5c8e71258",
+          "topic_node_ids": [
+            "sha256:5e698b478c96ae259f5a1f5d36ea60b8afb44ee02f897a9ed6195ea9a54befe8"
+          ]
+        },
+        "evidence": [
+          {
+            "evidence_id": "sha256:b4248904b2837cc387e4f3e28b2c2fa36fea47f44dd71eaf3708ec234cb21cb1",
+            "record_kind": "artifact",
+            "record_id": "sha256:934e6f288695e680c1205913d3ba83c3d6bf802d81c38206a0207f65b21c74ca",
+            "revision_id": "sha256:93a42300faff73bf33532d667fbc9304b0568881a05c7c456c87dbe6eda19ff9",
+            "source": "chatgpt:synthetic-account",
+            "source_record_id": "[\"artifact\",\"synthetic-conversation-1\",\"synthetic-message-3\"]",
+            "content_hash": "4343f91bd07018432999d29015e52f8b4e77b5c62e5d6bc06f1b2796d35f2fa4",
+            "raw_member": "conversations.json",
+            "raw_member_hash": "b65851330f1feeb455edb7e935aabada42c86d8266bcb03ea16adf4bf8e36db4",
+            "raw_pointer": "/0/mapping/node-1-assistant-b/message",
+            "collector_version": "chatgpt@0.2.0",
+            "parser_version": "chatgpt@0.2.0"
+          }
+        ],
+        "version_conflict": false
+      }
+    ]
+  },
+  "warnings": [],
+  "api_version": 1
+}

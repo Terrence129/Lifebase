@@ -19,8 +19,8 @@ from typing import Any, Literal, Protocol, get_args
 #   local_only          只允许本地处理与本地模型
 #   redact_before_cloud 脱敏或摘要后才可发送给云端
 #   cloud_ok            可直接发送给云端
-# 每个 collector 在 metadata()["egress_policy"] 声明来源默认值；执行方是未来的
-# 查询接口 / agent 集成，当前阶段尚无消费方。
+# 每个 collector 在 metadata()["egress_policy"] 声明来源默认值，由 humanos 查询接口执行；
+# 运行时实际模型路由的验证仍属于后续联调。
 EgressPolicy = Literal["local_only", "redact_before_cloud", "cloud_ok"]
 EGRESS_POLICIES: tuple[str, ...] = get_args(EgressPolicy)
 

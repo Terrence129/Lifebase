@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -92,14 +93,29 @@ def test_gitignore_covers_local_data_and_env() -> None:
     assert not missing, f".gitignore 缺少模式：{missing}"
 
 
-def test_boundary_layers_have_no_code() -> None:
-    """graph/ 与 humanos/ 是边界占位层，禁止出现 Python 代码。"""
-    offenders = [
-        path
-        for sub in ("graph", "humanos")
-        for path in (ROOT / "src" / "lifebase" / sub).rglob("*.py")
-    ]
-    assert not offenders, f"边界层出现代码：{offenders}"
+def test_layer_import_direction() -> None:
+    """批准的聊天切片仍保持底层不依赖应用层，graph 不依赖 humanos。"""
+    forbidden = {"core": {"sync", "vault", "graph", "humanos"},
+                 "sync": {"graph", "humanos"}, "vault": {"graph", "humanos"},
+                 "graph": {"humanos"}}
+    root = ROOT / "src" / "lifebase"
+    offenders = []
+    for layer, excluded in forbidden.items():
+        for path in (root / layer).rglob("*.py"):
+            package = ["lifebase", *path.relative_to(root).parent.parts]
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                imports = []
+                if isinstance(node, ast.Import):
+                    imports = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    parts = (package[:len(package) - node.level + 1] if node.level else [])
+                    module = ".".join([*parts, *node.module.split(".")]) if node.module else ".".join(parts)
+                    imports = [module, *(module + "." + alias.name for alias in node.names)]
+                for imported in imports:
+                    parts = imported.split(".")
+                    if len(parts) > 1 and parts[0] == "lifebase" and parts[1] in excluded:
+                        offenders.append((str(path.relative_to(ROOT)), node.lineno, imported))
+    assert not offenders, f"反向层级依赖：{offenders}"
 
 
 def test_no_project_level_venv() -> None:

@@ -13,8 +13,13 @@ from pathlib import Path
 from typing import Any
 
 import duckdb
+import pyarrow as pa
 
 from lifebase.core.paths import data_path
+from lifebase.graph import GraphError, build_graph, graph_status
+from lifebase.humanos import HumanOS, ToolError, ToolResult
+from lifebase.humanos.service import parse_time
+from lifebase.humanos.terminal import render
 from lifebase.sync.collectors import make_collector
 from lifebase.sync.pipeline import ingest_file
 from lifebase.sync.quality import quality
@@ -61,13 +66,69 @@ def build_parser() -> argparse.ArgumentParser:
     for command in (ingest, listing, querying, verifying, rebuilding, reporting):
         command.add_argument("--data-dir", type=Path, default=argparse.SUPPRESS,
                              help="本地数据目录，也可放在命令前")
+    graph = commands.add_parser("graph", help="自动构建或检查聊天主题图谱")
+    graph.add_argument("--data-dir", type=Path, default=argparse.SUPPRESS)
+    actions = graph.add_subparsers(dest="graph_action", required=True)
+    building = actions.add_parser("build", help="从已验证 Silver 发布 Gold 图谱")
+    building.add_argument("--keywords-per-message", type=int, default=5)
+    checking = actions.add_parser("status", help="检查 Gold 哈希、引用及是否过期")
+    topics = commands.add_parser("topics", help="列出自动提取的关键词主题")
+    search = commands.add_parser("search", help="沿主题关系搜索有证据的消息")
+    search.add_argument("text")
+    timeline = commands.add_parser("timeline", help="按时间阅读会话与版本")
+    timeline.add_argument("--conversation", required=True, help="检索结果中的 conversation_id")
+    evidence = commands.add_parser("evidence", help="只读返回规范化记录和证据定位")
+    evidence.add_argument("evidence_id")
+    context = commands.add_parser("context", help="准备供外部运行时消费的证据上下文")
+    context.add_argument("question")
+    for command in (building, checking, topics, search, timeline, evidence, context):
+        command.add_argument("--data-dir", type=Path, default=argparse.SUPPRESS)
+        command.add_argument("--format", choices=("text", "json"), default="text")
+    for command in (topics, search, timeline, evidence, context):
+        command.add_argument("--destination", choices=("local", "cloud"), default="local")
+    for command in (topics, search, timeline, context):
+        command.add_argument("--source")
+        command.add_argument("--limit", type=int, default=10)
+    for command in (search, timeline, context):
+        command.add_argument("--role")
+        command.add_argument("--since", help="UTC 日期或带时区的时间戳，包含起点")
+        command.add_argument("--until", help="UTC 日期或带时区的时间戳，不包含终点")
     return parser
+
+
+TOOL_COMMANDS = {"graph", "topics", "search", "timeline", "evidence", "context"}
+
+
+def _run_tool(args: argparse.Namespace, data_dir: Path) -> ToolResult:
+    if args.command == "graph":
+        report = (build_graph(data_dir, args.keywords_per_message) if args.graph_action == "build"
+                  else graph_status(data_dir))
+        return ToolResult("graph." + args.graph_action, report.status, report.snapshot_id, asdict(report))
+    with HumanOS(data_dir, args.destination) as service:
+        if args.command == "evidence":
+            return service.evidence(args.evidence_id)
+        options = {"source": args.source, "limit": args.limit}
+        if args.command == "topics":
+            return service.topics(**options)
+        options.update(role=args.role, since=parse_time(args.since), until=parse_time(args.until))
+        if args.command == "search":
+            return service.search(args.text, **options)
+        if args.command == "timeline":
+            return service.timeline(args.conversation, **options)
+        return service.context(args.question, **options)
 
 
 def run(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         data_dir = data_path(args.data_dir)
+        if args.command in TOOL_COMMANDS:
+            result = _run_tool(args, data_dir)
+            if args.format == "json":
+                _print(asdict(result))
+            else:
+                print(render(result))
+            return 0 if result.status in ("ok", "empty") else 1
         if args.command == "list":
             _print(SourceRegistry(data_dir).list_sources())
         elif args.command == "verify":
@@ -122,7 +183,12 @@ def run(argv: list[str] | None = None) -> int:
                     imports.append({"file": path.name, "status": "error", "error": str(error)})
             _print({"imports": imports, "skipped": skipped})
             return 1 if failed else 0
-    except (ValueError, OSError, sqlite3.Error, duckdb.Error) as error:
+    except (ValueError, OSError, sqlite3.Error, duckdb.Error, pa.ArrowException) as error:
+        if args.command in TOOL_COMMANDS and args.format == "json":
+            code = error.code if isinstance(error, (GraphError, ToolError)) else "INPUT_INVALID"
+            _print({"api_version": 1, "tool": args.command, "status": "error", "snapshot_id": None,
+                    "data": {}, "warnings": [], "error": {"code": code, "message": str(error)}})
+            return 1
         print(f"lifebase: {error}", file=sys.stderr)
         return 1
     return 0

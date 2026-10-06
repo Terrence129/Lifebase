@@ -17,7 +17,7 @@
 
 出现以下任一情况，**先停下并向用户确认，不得自行决定**：
 
-1. 改动 `graph/` 或 `humanos/`（边界占位层）。
+1. 在已批准的聊天图谱、只读工具与终端切片之外扩展 `graph/` 或 `humanos/`；当前批准范围见 [ADR-016](docs/adr/ADR-016-聊天图谱与Harness就绪接口.md)。
 2. 新增第三方依赖，或改动技术栈/存储栈。
 3. 修改 canonical schema 或 `Envelope` 契约。
 4. 删除、覆盖或重写任何已归档 RAW 数据。
@@ -42,7 +42,7 @@
 | 原始数据不入 git | 提交前 `git status` 不含个人数据；`.gitignore` 覆盖 `data/` `inbox/` `*.db` `*.parquet` `.env` | `tests/unit/test_constraints.py::test_gitignore_covers_local_data_and_env` + 提交前人工 `git status` |
 | RAW 不可变 | vault 读回 hash 校验（涉及相关代码改动时必测） | `tests/unit/test_vault.py`（哈希与只读完整性） |
 | Collector 幂等 | 同一 fixture 重复导入产物一致，已覆盖十次导入（涉及相关代码改动时必测） | `tests/unit/test_vault.py::test_archive_roundtrip_and_idempotency` |
-| 不跨层写代码 | `graph/`、`humanos/` 当前禁止写代码；`vault/` 不 import `graph/` | `tests/unit/test_constraints.py::test_boundary_layers_have_no_code`、`::test_vault_does_not_import_graph` |
+| 分层依赖单向 | `core/` 不依赖上层；`sync/`、`vault/` 不依赖 `graph/`、`humanos/`；`graph/` 不依赖 `humanos/`；运行时适配在外部仓库 | `tests/unit/test_constraints.py::test_layer_import_direction` |
 | 测试数据合成 | `tests/fixtures/` 仅含合成、脱敏数据 | 无机械门禁（人工核对 fixtures 内容） |
 | 不提交密钥 | `.env` 已 gitignore | `tests/unit/test_constraints.py::test_gitignore_covers_local_data_and_env` |
 | 约束不复制（红线唯一归属） | 红线特征短语只出现在 `AGENTS.md`，其余文件改指针；豁免显式列于门禁白名单 | `tests/unit/test_constraints.py::test_red_line_phrases_stay_in_agents_md` |

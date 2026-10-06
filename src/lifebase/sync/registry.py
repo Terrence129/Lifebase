@@ -59,6 +59,11 @@ class SourceRegistry:
                        and all(value is None or row[name] == value
                                for name, value in filters.items())})
 
+    def successful_imports(self) -> list[dict[str, Any]]:
+        """一次只读读取成功分区及其处理身份，供派生快照捕获输入。"""
+        return [row for row in self._rows()
+                if row["partition"] is not None and row["error"] is None]
+
     def list_sources(self) -> list[dict[str, Any]]:
         grouped: dict[str, list[dict[str, Any]]] = {}
         for row in self._rows():
