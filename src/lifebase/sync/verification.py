@@ -25,6 +25,9 @@ from lifebase.core.records import (
     revision_id,
 )
 from lifebase.sync.collectors.chatgpt import MAX_JSON_BYTES
+from lifebase.sync.collectors.doubao import conversation_id as doubao_conversation_id
+from lifebase.sync.collectors.doubao import message_id as doubao_message_id
+from lifebase.sync.collectors.doubao import read_export as read_doubao_export
 from lifebase.vault.silver import SCHEMAS
 
 DATABASE_COLUMNS = {
@@ -304,7 +307,7 @@ class _Verifier:
                          or contexts[row["parent_record_id"]] != row["context_record_id"])):
                 self.issue("record_link_missing", folder, f"消息的会话或父消息缺失：{row['record_id']}")
         referenced = set()
-        documents: dict[str, tuple[str, Any]] = {}
+        documents: dict[str, tuple[str, Any, str | None]] = {}
         evidence_ids: set[str] = set()
         for evidence in tables["evidence"]:
             self.report.counts["evidence"] += 1
@@ -346,22 +349,30 @@ class _Verifier:
             self.issue("record_evidence_missing", folder, f"规范化记录没有证据：{key[1]}")
 
     def evidence(self, folder: Path, evidence: dict[str, Any], raw_path: Path,
-                 documents: dict[str, tuple[str, Any]]) -> None:
+                 documents: dict[str, tuple[str, Any, str | None]]) -> None:
         try:
             member = evidence["raw_member"]
+            source_type = evidence["collector_version"].partition("@")[0]
+            if source_type == "doubao" and member != "":
+                raise ValueError("豆包 JSON 定位须使用文件根")
             if member not in documents:
-                with zipfile.ZipFile(raw_path) as archive:
-                    if archive.namelist().count(member) != 1:
-                        raise ValueError
-                    info = archive.getinfo(member)
-                    if info.file_size > MAX_JSON_BYTES or info.flag_bits & 1:
-                        raise ValueError
-                    with archive.open(info) as stream:
-                        data = stream.read(MAX_JSON_BYTES + 1)
-                    if len(data) > MAX_JSON_BYTES:
-                        raise ValueError
-                documents[member] = (sha256_bytes(data), json.loads(data))
-            digest, document = documents[member]
+                if source_type == "doubao":
+                    raw = read_doubao_export(raw_path)
+                    documents[member] = (raw.content_hash, raw.document,
+                                         doubao_conversation_id(raw.document))
+                else:
+                    with zipfile.ZipFile(raw_path) as archive:
+                        if archive.namelist().count(member) != 1:
+                            raise ValueError
+                        info = archive.getinfo(member)
+                        if info.file_size > MAX_JSON_BYTES or info.flag_bits & 1:
+                            raise ValueError
+                        with archive.open(info) as stream:
+                            data = stream.read(MAX_JSON_BYTES + 1)
+                        if len(data) > MAX_JSON_BYTES:
+                            raise ValueError
+                    documents[member] = (sha256_bytes(data), json.loads(data), None)
+            digest, document, cid = documents[member]
             if digest != evidence["raw_member_hash"]:
                 self.issue("evidence_member_hash_mismatch", folder, "RAW 成员哈希与证据不一致",
                            evidence_id=evidence["evidence_id"])
@@ -371,11 +382,22 @@ class _Verifier:
             kind = evidence["record_kind"]
             if (not isinstance(sid, list) or len(sid) != (2 if kind == "event" else 3)
                     or not all(isinstance(part, str) and part for part in sid)
-                    or sid[0] != kind or not isinstance(value, dict) or value.get("id") != sid[-1]
+                    or sid[0] != kind or not isinstance(value, dict)
                     or record_id(evidence["source"], evidence["source_record_id"])
                     != evidence["record_id"]):
                 raise ValueError
-            if kind == "artifact":
+            if source_type == "doubao":
+                if sid[1] != cid:
+                    raise ValueError
+                if kind == "event":
+                    if evidence["raw_pointer"] != "":
+                        raise ValueError
+                elif (re.fullmatch(r"/messages/(0|[1-9][0-9]*)", evidence["raw_pointer"]) is None
+                      or doubao_message_id(value) != sid[-1]):
+                    raise ValueError
+            elif value.get("id") != sid[-1]:
+                raise ValueError
+            elif kind == "artifact":
                 conversation = _pointer(document, "/" + evidence["raw_pointer"].split("/")[1])
                 if not isinstance(conversation, dict) or conversation.get("id") != sid[1]:
                     raise ValueError

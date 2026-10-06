@@ -23,7 +23,8 @@ def test_source_type_parses_account_prefix() -> None:
     assert source_type("chatgpt:personal") == "chatgpt"
 
 
-def test_source_type_falls_back_to_single_registered_collector() -> None:
+def test_source_type_falls_back_to_single_registered_collector(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delitem(COLLECTORS, "doubao")
     assert source_type("account-a") == "chatgpt"
     assert source_type("other:personal") == "chatgpt"
 
@@ -50,10 +51,11 @@ def test_make_collector_rejects_unknown_source_with_multiple_registered(
         make_collector("unknown:personal")
 
 
-def test_metadata_for_specific_and_single_default() -> None:
+def test_metadata_for_specific_and_single_default(monkeypatch: pytest.MonkeyPatch) -> None:
     meta = metadata_for("chatgpt:personal")
     assert meta["source_type"] == "chatgpt"
     assert meta["collector_version"].startswith("chatgpt@")
+    monkeypatch.delitem(COLLECTORS, "doubao")
     assert metadata_for(None) == meta
 
 
@@ -85,3 +87,14 @@ def test_registered_collectors_declare_egress_policy() -> None:
 
 def test_chatgpt_defaults_to_local_only() -> None:
     assert metadata_for("chatgpt:personal")["egress_policy"] == "local_only"
+
+
+def test_doubao_is_registered_and_defaults_to_local_only() -> None:
+    assert source_type("doubao:personal") == "doubao"
+    meta = metadata_for("doubao:personal")
+    assert meta["source_type"] == "doubao" and meta["egress_policy"] == "local_only"
+
+
+def test_archive_hint_cannot_conflict_with_registered_source_prefix() -> None:
+    with pytest.raises(ValueError, match="冲突"):
+        make_collector("chatgpt:personal", collector_version="doubao@0.1.0")

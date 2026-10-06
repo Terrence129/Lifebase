@@ -43,9 +43,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--data-dir", type=Path, default=Path.home() / "Lifebase",
                         help="本地数据目录（默认 ~/Lifebase）")
     commands = parser.add_subparsers(dest="command", required=True)
-    ingest = commands.add_parser("ingest", help="归档并规范化 ChatGPT 导出；未指定文件则扫描 inbox")
+    ingest = commands.add_parser("ingest", help="归档并规范化导出文件；目录按来源扫描，默认 inbox")
     ingest.add_argument("paths", nargs="*", type=Path)
-    ingest.add_argument("--source", required=True, help="区分账户的来源 ID，例如 chatgpt:personal")
+    ingest.add_argument("--source", required=True, help="区分账户的来源 ID，例如 chatgpt:personal / doubao:personal")
     listing = commands.add_parser("list", help="查看 Source Registry")
     querying = commands.add_parser("query", help="对 events / artifacts / evidence 执行只读 SQL")
     querying.add_argument("sql", help="一条 SELECT 或 WITH SELECT")
@@ -90,18 +90,26 @@ def run(argv: list[str] | None = None) -> int:
             result = query(data_dir / "vault" / "silver", partitions, args.sql)
             _print(asdict(result))
         else:
-            paths = args.paths
-            if not paths:
+            inputs = args.paths
+            collector = make_collector(args.source)
+            if not inputs:
                 inbox = data_dir / "inbox"
                 if not inbox.is_dir():
                     _print({"imports": [], "skipped": [], "message": "inbox 为空或尚未创建"})
                     return 0
-                collector = make_collector(args.source)
-                candidates = sorted(path for path in inbox.iterdir() if path.is_file())
-                paths = [path for path in candidates if collector.detect(str(path))]
-                skipped = [path.name for path in candidates if path not in paths]
-            else:
-                skipped = []
+                inputs = [inbox]
+            paths: list[Path] = []
+            skipped: list[str] = []
+            for item in inputs:
+                item = item.expanduser()
+                if item.is_dir():
+                    for candidate in sorted(path for path in item.iterdir() if path.is_file()):
+                        if collector.detect(str(candidate)):
+                            paths.append(candidate)
+                        else:
+                            skipped.append(candidate.name)
+                else:
+                    paths.append(item)
             imports: list[dict[str, Any]] = []
             failed = False
             for path in paths:

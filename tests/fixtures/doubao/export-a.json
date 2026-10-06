@@ -1,0 +1,62 @@
+{
+  "source": "doubao",
+  "url": "https://www.doubao.com/chat/synthetic-chat-route",
+  "title": "合成豆包会话：野餐与分支",
+  "chatId": "synthetic-chat-route",
+  "exportedAt": "2026-10-06T00:00:00Z",
+  "meta": {
+    "sourceMode": "api",
+    "conversationId": "synthetic-doubao-conversation",
+    "stopReason": "no-more",
+    "rawCount": 3
+  },
+  "messages": [
+    {
+      "index": 1,
+      "messageId": "synthetic-user-1",
+      "role": "user",
+      "text": "  合成问题：野餐带什么？\n",
+      "raw": {
+        "conversation_id": "synthetic-doubao-conversation",
+        "message_id": "synthetic-user-1",
+        "user_type": 1,
+        "create_time": "1767225600",
+        "update_time": "1767225600",
+        "content_type": 1,
+        "content": "{\"text\":\"合成问题：野餐带什么？\"}",
+        "bot_reply_message_id": "0"
+      }
+    },
+    {
+      "index": 2,
+      "messageId": "synthetic-assistant-1",
+      "role": "assistant",
+      "text": "合成回复：带水和野餐垫。",
+      "raw": {
+        "conversation_id": "synthetic-doubao-conversation",
+        "message_id": "synthetic-assistant-1",
+        "user_type": 2,
+        "create_time": "1767225660.123456",
+        "update_time": "1767225661",
+        "content_type": 9999,
+        "content": "",
+        "content_block": [{"synthetic_image": "placeholder-only"}],
+        "bot_reply_message_id": "synthetic-user-1"
+      }
+    },
+    {
+      "index": 3,
+      "messageId": "synthetic-assistant-2",
+      "role": "assistant",
+      "text": "合成另一条回复：先看天气。",
+      "raw": {
+        "conversation_id": "synthetic-doubao-conversation",
+        "message_id": "synthetic-assistant-2",
+        "user_type": 2,
+        "create_time": "1767225720",
+        "update_time": "1767225720",
+        "bot_reply_message_id": "synthetic-user-1"
+      }
+    }
+  ]
+}

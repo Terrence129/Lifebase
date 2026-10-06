@@ -41,7 +41,9 @@ def ingest_file(path: Path, data_dir: Path, source: str) -> ImportResult:
 def reprocess_archive(entry: ArchiveEntry, data_dir: Path) -> ImportResult:
     """重用已有 RAW 与首次入库时间；不重新归档 inbox 文件。"""
     data_dir = data_path(data_dir)
-    metadata = make_collector(entry.source).metadata() | {"schema_version": SCHEMA_VERSION}
+    metadata = make_collector(entry.source, collector_version=entry.collector_version).metadata() | {
+        "schema_version": SCHEMA_VERSION,
+    }
     return _process_archive(entry, data_dir, metadata)
 
 
@@ -65,7 +67,8 @@ def _process_archive(entry: ArchiveEntry, data_dir: Path,
         raw_path = ObjectStore(vault).verify(entry.content_hash)
         if raw_path.stat().st_size != entry.size_bytes:
             raise ValueError("RAW 长度与归档索引不一致")
-        collector = make_collector(entry.source, entry.ingested_at)
+        collector = make_collector(entry.source, entry.ingested_at,
+                                   collector_version=entry.collector_version)
         # 解析归档对象，不重新读取可能在归档后发生变化的 inbox 文件。
         raw = collector.ingest(str(raw_path))
         if raw.content_hash != entry.content_hash:

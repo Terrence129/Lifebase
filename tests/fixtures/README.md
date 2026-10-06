@@ -4,3 +4,5 @@
 
 - 任何新 collector 的测试都必须能靠 fixtures 跑通，不依赖真实导出。
 - 合成数据示例：手工构造的小型 conversations.json、随机 GPS 点、占位图片。
+
+已接入来源的样例说明：[ChatGPT](chatgpt/README.md)、[Doubao](doubao/README.md)。

@@ -13,8 +13,9 @@ from typing import Any
 
 from lifebase.sync.base import Collector
 from lifebase.sync.collectors.chatgpt import ChatGPTCollector
+from lifebase.sync.collectors.doubao import DoubaoCollector
 
-COLLECTORS: dict[str, type[Collector]] = {"chatgpt": ChatGPTCollector}
+COLLECTORS: dict[str, type[Collector]] = {"chatgpt": ChatGPTCollector, "doubao": DoubaoCollector}
 
 
 def source_type(source_id: str) -> str:
@@ -31,9 +32,18 @@ def source_type(source_id: str) -> str:
     raise ValueError(f"未知来源类型：{prefix!r}（已登记：{', '.join(sorted(COLLECTORS))}）")
 
 
-def make_collector(source_id: str, ingested_at: datetime | None = None) -> Collector:
+def make_collector(source_id: str, ingested_at: datetime | None = None, *,
+                   collector_version: str | None = None) -> Collector:
     """按 source_type 实例化 collector，供 ingest / reprocess 使用。"""
-    return COLLECTORS[source_type(source_id)](source_id, ingested_at)
+    if collector_version is None:
+        name = source_type(source_id)
+    else:
+        # 重放沿用归档来源类型，使历史无前缀 source 在多 collector 时仍可恢复。
+        name = collector_version.partition("@")[0]
+        prefix = source_id.partition(":")[0]
+        if name not in COLLECTORS or prefix in COLLECTORS and prefix != name:
+            raise ValueError("归档 collector 类型未登记或与来源前缀冲突")
+    return COLLECTORS[name](source_id, ingested_at)
 
 
 def metadata_for(source_id: str | None) -> dict[str, Any]:

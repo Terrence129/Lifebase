@@ -14,15 +14,20 @@ LifeSync（采集）→ LifeVault（不可变存储）→ LifeGraph（知识图�
 
 ## 当前状态
 
-截至 **2026-10-05**，首个原型已完成合成数据链路及可靠性验收：ChatGPT ZIP →
+截至 **2026-10-06**，已接入 ChatGPT ZIP 与 doubao-helper JSON：来源文件 →
 RAW 归档 → canonical v1 → Parquet → DuckDB 查询；已实现
 `ingest`、`list`、`query`、`verify`、`rebuild`、`quality` 六个 CLI 命令，
-collector 经来源注册表（`sync/collectors/__init__.py`）路由，后续来源可扩展接入。
+collector 经来源注册表（`sync/collectors/__init__.py`）路由，支持目录导入及多来源重放。
 
-本地 ruff 检查通过；93 项测试中 Windows 原生（conda `lifebase` 环境）89 项通过、
-4 项符号链接测试因系统权限跳过，Linux/CI 执行全部 93 项。已记录 1,000 / 10,000 /
-50,000 基础消息的合成规模基线。真实官方导出兼容性尚未验收；多平台、自动监听、
-LifeGraph 和 HumanOS 尚未实现。完整进度、待验证事项与下一步见
+最近本地验证记录（2026-10-06，macOS，conda `lifebase`）：ruff 检查通过，
+176 项测试全部通过。已记录 1,000 / 10,000 /
+50,000 基础消息的合成规模基线。collector/parser `chatgpt@0.2.0` 支持编号会话文件、
+仅 parent 的节点及混合内容中的字符串。单份真实导出已完成 125 个会话、5,882 条
+消息与 6,007 条证据的导入、完整性检查、聚合查询、重复导入和重放验收。
+doubao@0.1.0 的三份本地导出包含 3 个会话、5,266 条消息、5,269 条证据，重复导入
+和混合来源重放保持持久化文件不变。全部数据检查没有错误；合并仓库 verify 为 warning，
+仅因两个已有 Finder .DS_Store 文件。豆包会话时间、回复关系与覆盖范围仍有缺口。
+自动采集、LifeGraph 和 HumanOS 尚未实现。完整进度、待验证事项与下一步见
 [当前阶段](docs/reference.md#2-项目背景与当前阶段)。
 
 ## 快速开始
@@ -83,7 +88,7 @@ lifebase --data-dir ~/Lifebase-demo query "SELECT role, text_parts, occurred_at 
 
 再导入同一文件，结果显示 `unchanged`；导入 `export-b.zip` 可以验证重叠来源与内容版本。
 
-真实导出到达后，将 ZIP 放进 `~/Lifebase/inbox/`，执行：
+导入真实导出时，将 ZIP 放进 `~/Lifebase/inbox/`，执行：
 
 ```bash
 lifebase ingest --source chatgpt:personal
@@ -91,7 +96,19 @@ lifebase list
 lifebase query "SELECT count(DISTINCT record_id) AS messages FROM artifacts"
 ```
 
-`--source` 必须区分不同账户，不填写密钥。未提供文件路径时手动扫描 inbox；原文件
+也可直接提供仓库外的 ZIP 路径：`lifebase ingest --source chatgpt:personal /path/to/export.zip`。
+
+doubao-helper 的 JSON 可逐文件导入，也可直接扫描导出目录：
+
+```bash
+lifebase ingest --source doubao:personal ~/Downloads/doubao-export
+lifebase quality --source doubao:personal
+lifebase query --source doubao:personal "SELECT role, text_parts, occurred_at, known_at FROM artifacts ORDER BY occurred_at LIMIT 20"
+```
+
+`--source` 使用已登记的平台前缀并区分账户，例如 chatgpt:personal、doubao:personal，
+不填写密钥。目录只扫描直接子文件，按选定来源检测，不匹配的文件列在 skipped 中；
+显式文件路径直接进入归档与解析。未提供路径时按同样方式手动扫描 inbox；原文件
 留在原处，RAW 内容归档到 `vault/objects/`，首次来源入库信息保存在
 `vault/manifest.sqlite`，Source Registry 位于 `registry.sqlite`。
 
@@ -110,9 +127,29 @@ lifebase query "SELECT a.role, a.text_parts, e.content_hash, e.raw_member, e.raw
 处理其他文件。`query` 只接受单条 SELECT / WITH SELECT，对 SQL 禁用外部文件和
 网络访问；`list` / 空库查询不会创建数据目录。
 
-本版支持 ZIP 根目录中唯一的 `conversations.json` 数组；编号会话文件、加密 ZIP、
-非文本内容理解仍待扩展。JSON 成员上限为 128 MiB，整个 ZIP 仍完整归档。结构错误
-会报告，缺失或异常时间保留空值并附诊断；未知内容类型仅保留消息元数据与 RAW 引用。
+ChatGPT 支持 ZIP 根目录中唯一的 `conversations.json` 数组，或从 0 起连续编号的
+`conversations-000.json` 等文件。存在 `export_manifest.json` 时核对会话成员列表、
+分片标记与数量及可选库存长度；没有 manifest 的编号文件按数字排序读取，并提醒
+无法证明导出完整性。两种布局并存、成员重复或清单矛盾会报告错误。
+
+节点可只提供 parent；显式提供 children 时仍核对关系一致性。`text` 逐段保留，
+`multimodal_text` 仅提取字符串，非字符串内容仍保留 RAW；没有字符串时 text_parts
+为 null。会话 JSON 单成员及合计上限均为 128 MiB，manifest 上限为 1 MiB，整个
+ZIP 仍完整归档。加密 ZIP、媒体理解和其他内容类型解析尚未支持。
+
+ChatGPT 缺失或异常时间保留空值并附诊断；消息无 update_time 时 known_at=null，但合法
+create_time 仍进入 occurred_at。未知内容类型保留消息元数据与 RAW 引用。
+
+Doubao 支持 source=doubao、每文件一个会话的 doubao-helper JSON。优先使用
+API 会话身份，核对消息 ID 与 raw 对象身份；text 原样进入 text_parts，消息
+raw.create_time / update_time 按 Unix 秒映射到 occurred_at / known_at。
+会话时间及消息 parent_record_id 为空，exportedAt 不填入来源时间。单文件读取
+上限为 128 MiB；证据 raw_member="" 指整个 JSON，raw_pointer="" 指会话根，
+`/messages/0` 等指消息。原文件完整归档，解析器不处理媒体或重新提取 raw 中的文本。
+
+工具导出可能已筛选和去重，rawCount 差异与提前停止都会附诊断；no-more 不能
+证明账户覆盖完整。quality 只统计已导出的记录，覆盖范围仍为空。具体映射见
+[ADR-015](docs/adr/ADR-015-豆包JSON导入与多来源重放.md)。
 查询目前将登记的 Parquet 分区载入内存，适合原型规模数据。
 
 契约见 [canonical v1](docs/design/chatgpt-minimal-contract-draft.md)，具体行为由合成
@@ -130,7 +167,7 @@ lifebase verify
 
 输出 JSON：`status`、`counts` 和 `issues`。检查包括 RAW 内容地址与归档长度、
 两个 SQLite 索引、全部已发布 Silver 分区的哈希/schema/行数/处理身份、规范化
-记录关联，以及证据的 ZIP 成员哈希、JSON Pointer 和来源记录 ID。问题包含稳定
+记录关联，以及证据的 ZIP 成员或整个 JSON 哈希、JSON Pointer 和来源记录 ID。问题包含稳定
 `code`、相对数据目录的 `path`，证据问题还包含 `evidence_id`；不输出消息正文。
 
 状态 `ok` 返回 0；错误返回 1。未登记的对象、分区和临时目录作为 `warning`
@@ -154,7 +191,7 @@ lifebase --data-dir ~/Lifebase-demo rebuild --source chatgpt:synthetic-account
 lifebase --data-dir ~/Lifebase-demo verify
 ```
 
-`rebuild` 使用当前安装的 ChatGPT collector/parser 和 schema 版本，从只读 manifest
+`rebuild` 按归档的 collector 类型使用当前安装的对应 collector/parser 和 schema 版本，从只读 manifest
 恢复来源、原始文件名及首次入库时间，再读取并校验 RAW，重新解析、发布 Silver
 和登记 Source Registry。它不会重新归档 inbox 文件，也不会修改 RAW 或 manifest。
 缺失的完整分区和 registry 可重新生成；完整的已有分区在哈希与逻辑结果校验后复用。
@@ -164,12 +201,15 @@ lifebase --data-dir ~/Lifebase-demo verify
 输出 JSON 包含当前 `collector_version`、`parser_version`、`schema_version` 和逐条
 `rebuilds`，状态为 `rebuilt`、`unchanged` 或 `error`。单条失败仍处理其他归档，整体
 `partial` / `error` 返回 1，全部成功返回 0。空库或未匹配来源返回空列表，不创建目录。
+混合来源或处理版本时，顶层 collector_version / parser_version 为 null，每条
+rebuilds 分别给出当前版本；单一版本继续给出顶层值。历史无前缀 ChatGPT 来源仍可
+按已保存的归档类型重放，新导入需提供平台前缀。
 
 处理版本升级会新增分区，旧分区保留。默认 query 继续合并全部成功分区；需要核对
 某次重建结果时，使用 rebuild 输出的版本显式筛选，例如当前版本：
 
 ```bash
-lifebase --data-dir ~/Lifebase-demo query --source chatgpt:synthetic-account --parser-version chatgpt@0.1.0 --schema-version 1 "SELECT count(*) FROM artifacts"
+lifebase --data-dir ~/Lifebase-demo query --source chatgpt:synthetic-account --parser-version chatgpt@0.2.0 --schema-version 1 "SELECT count(*) FROM artifacts"
 ```
 
 还可使用 `--collector-version`；多个筛选条件同时满足才会选入分区。筛选仅选择已有
@@ -182,7 +222,7 @@ ingest 和 rebuild 的单条成功结果包含 `quality`；也可以汇总已登
 
 ```bash
 lifebase --data-dir ~/Lifebase-demo quality
-lifebase --data-dir ~/Lifebase-demo quality --source chatgpt:synthetic-account --parser-version chatgpt@0.1.0 --schema-version 1
+lifebase --data-dir ~/Lifebase-demo quality --source chatgpt:synthetic-account --parser-version chatgpt@0.2.0 --schema-version 1
 ```
 
 报告区分会话和消息的 `identities`（身份数）与 `versions`（内容版本数），统计
@@ -190,7 +230,16 @@ lifebase --data-dir ~/Lifebase-demo quality --source chatgpt:synthetic-account -
 不支持的内容类型及数量，并列出证据数。时间缺失、异常或不可靠而变成 NULL 的
 版本都计入缺失时间；具体解析原因仍在单次导入 `issues` / 来源 `diagnostics` 中。
 空文本仅指空数组或全部为空字符串，空白字符保持原样。非文本内容保留 RAW 和
-消息元数据，报告中的“不支持”表示本版没有规范化其内容，不表示 RAW 丢失。
+消息元数据，报告中的“不支持”表示本版没有完整规范化其内容，不表示 RAW 丢失。
+
+`text_versions` 只计 `text` 类型；`multimodal_text` 即使提取出字符串，仍列在不支持
+内容类型统计中，表示该类型没有完整解析。查询可提取文本时使用 `text_parts IS NOT NULL`，
+不要只按 `content_format='text'` 筛选。ChatGPT 单份真实导出验收中，quality 为 warning：
+消息 known_at 全部为空、14 条空文本版本及部分内容类型未完整解析；109 条
+multimodal_text 记录提取到字符串。此验收不代表账户覆盖完整或媒体已被理解。
+豆包三份导出的消息 creation/update 时间均有值，无空文本；quality 为 warning，
+因为会话时间为空。其全部 text_versions 仅指工具已导出的文本，不涵盖过滤掉的
+消息、回复关系或未处理的媒体；这些范围限制由来源 diagnostics 说明。
 
 `quality.status` 为 empty / ok / warning；warning 是质量提醒，成功生成报告仍返回
 0，不会把有效归档改判为导入失败。存储损坏导致查询失败则返回 1，可用 verify 定位。
