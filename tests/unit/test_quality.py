@@ -11,6 +11,7 @@ import pytest
 
 from lifebase.cli import run
 from lifebase.core.hashing import sha256_file
+from lifebase.sync.collectors.chatgpt import COLLECTOR_VERSION, PARSER_VERSION
 from lifebase.sync.pipeline import ingest_file
 from lifebase.sync.quality import quality
 
@@ -99,15 +100,15 @@ def test_quality_filters_accounts_and_processing_versions(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root = tmp_path / "data"
-    for account in ("account-a", "account-b"):
+    for account in ("chatgpt:account-a", "chatgpt:account-b"):
         ingest_file(FIXTURES / "export-a.zip", root, account)
-    monkeypatch.setattr("lifebase.sync.collectors.chatgpt.PARSER_VERSION", "chatgpt@0.1.1")
-    ingest_file(FIXTURES / "export-a.zip", root, "account-a")
+    monkeypatch.setattr("lifebase.sync.collectors.chatgpt.PARSER_VERSION", "chatgpt@0.2.1")
+    ingest_file(FIXTURES / "export-a.zip", root, "chatgpt:account-a")
     assert quality(root).quality.messages.identities == 10
-    both = quality(root, source="account-a")
+    both = quality(root, source="chatgpt:account-a")
     assert both.quality.messages.versions == 5 and both.quality.evidence == 14
-    selected = quality(root, source="account-a", collector_version="chatgpt@0.1.0",
-                       parser_version="chatgpt@0.1.1", schema_version=1)
+    selected = quality(root, source="chatgpt:account-a", collector_version=COLLECTOR_VERSION,
+                       parser_version="chatgpt@0.2.1", schema_version=1)
     assert selected.selected_partitions == 1 and selected.quality.evidence == 7
     assert quality(root, schema_version=99).quality.status == "empty"
 
@@ -129,7 +130,7 @@ def test_cli_quality_warning_is_not_import_failure(tmp_path: Path, capsys: pytes
     item = json.loads(capsys.readouterr().out)["imports"][0]
     assert item["status"] == "imported" and item["quality"]["status"] == "warning"
     assert run(["--data-dir", str(root), "quality", "--source", SOURCE,
-                "--parser-version", "chatgpt@0.1.0", "--schema-version", "1"]) == 0
+                "--parser-version", PARSER_VERSION, "--schema-version", "1"]) == 0
     assert json.loads(capsys.readouterr().out)["quality"] == item["quality"]
     result = item["partition"]
     (root / "vault" / "silver" / result / "artifacts.parquet").write_bytes(b"synthetic damage")

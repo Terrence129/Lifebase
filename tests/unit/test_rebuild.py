@@ -14,7 +14,12 @@ import pytest
 from lifebase.cli import run
 from lifebase.core.hashing import sha256_file
 from lifebase.core.records import NormalizedRecords, identity_hash, revision_id
-from lifebase.sync.collectors.chatgpt import ChatGPTCollector, RawExport
+from lifebase.sync.collectors.chatgpt import (
+    COLLECTOR_VERSION,
+    PARSER_VERSION,
+    ChatGPTCollector,
+    RawExport,
+)
 from lifebase.sync.pipeline import ingest_file
 from lifebase.sync.rebuild import rebuild
 from lifebase.sync.registry import SourceRegistry
@@ -121,14 +126,14 @@ def test_ten_rebuilds_reuse_every_persisted_file(tmp_path: Path) -> None:
 
 def test_source_filter_preserves_account_identity_and_ingested_times(tmp_path: Path) -> None:
     root = tmp_path / "data"
-    for account in ("account-a", "account-b"):
+    for account in ("chatgpt:account-a", "chatgpt:account-b"):
         ingest_file(FIXTURES / "export-a.zip", root, account)
     original = rows(root, "evidence")
     saved = bronze(root)
     (root / "vault" / "silver").rename(tmp_path / "held-silver")
     (root / "registry.sqlite").rename(tmp_path / "held-registry.sqlite")
-    report = rebuild(root, "account-a")
-    assert len(report.rebuilds) == 1 and report.rebuilds[0].source == "account-a"
+    report = rebuild(root, "chatgpt:account-a")
+    assert len(report.rebuilds) == 1 and report.rebuilds[0].source == "chatgpt:account-a"
     assert len(rows(root, "artifacts")) == 5 and len(rows(root, "evidence")) == 7
     assert all(row in original for row in rows(root, "evidence"))
     assert bronze(root) == saved
@@ -144,21 +149,21 @@ def test_parser_upgrade_keeps_old_partitions_and_can_query_specific_version(
     old_partition = SourceRegistry(root).partitions()[0]
     old_files = snapshot(root / "vault" / "silver" / old_partition)
     saved = bronze(root)
-    monkeypatch.setattr("lifebase.sync.collectors.chatgpt.PARSER_VERSION", "chatgpt@0.1.1")
+    monkeypatch.setattr("lifebase.sync.collectors.chatgpt.PARSER_VERSION", "chatgpt@0.2.1")
     changed_parser(monkeypatch)
     report = rebuild(root)
-    assert report.parser_version == "chatgpt@0.1.1" and report.rebuilds[0].status == "rebuilt"
+    assert report.parser_version == "chatgpt@0.2.1" and report.rebuilds[0].status == "rebuilt"
     registry = SourceRegistry(root)
     assert len(registry.partitions()) == 2
-    assert registry.partitions(parser_version="chatgpt@0.1.0") == [old_partition]
+    assert registry.partitions(parser_version=PARSER_VERSION) == [old_partition]
     assert registry.partitions(schema_version=99) == []
     assert registry.partitions(source="unknown-account") == []
     assert snapshot(root / "vault" / "silver" / old_partition) == old_files
     assert bronze(root) == saved
     assert len(rows(root, "events")) == 3
-    for version, count in (("chatgpt@0.1.0", 0), ("chatgpt@0.1.1", 1)):
+    for version, count in ((PARSER_VERSION, 0), ("chatgpt@0.2.1", 1)):
         assert run(["query", "--data-dir", str(root), "--source", SOURCE,
-                    "--collector-version", "chatgpt@0.1.0", "--parser-version", version,
+                    "--collector-version", COLLECTOR_VERSION, "--parser-version", version,
                     "--schema-version", "1", ("SELECT count(*) FROM events "
                     "WHERE title='synthetic parser correction'")]) == 0
         assert json.loads(capsys.readouterr().out)["rows"] == [[count]]

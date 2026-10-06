@@ -15,4 +15,9 @@
 这里的 mapping 结构是候选测试输入，不代表所有官方导出版本的完整契约。
 同 ID 内容变化是合成冲突场景，不声称是真实平台的必然编辑行为。
 
+`tests/unit/test_chatgpt_exports.py` 从 export-a 的合成 JSON 派生分片 ZIP 到测试临时
+目录：移除 children 与消息 update_time，加入混合字符串/占位媒体、manifest，并覆盖
+清单矛盾、逐成员证据定位、十次导入/重放稳定性及缺失派生数据恢复。该路径不读取真实
+导出，也不新增真实聊天样例。
+
 设计与验收规则见 [输出契约 v1](../../../docs/design/chatgpt-minimal-contract-draft.md)。

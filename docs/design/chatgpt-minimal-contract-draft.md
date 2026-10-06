@@ -51,9 +51,11 @@ export-b 中“同一消息 ID 内容变化”是用于验证冲突处理的合�
 
 参考：[OpenAI 导出文件说明](https://help.openai.com/en/articles/9106926-transfer-exported-conversations-between-chatgpt-accounts)。
 
-第一版支持此样例中的单个 JSON 数组及文本消息。编号文件、其他结构与媒体解析
-暂不宣称支持；检测到时明确报告。非文本内容不强转为字符串：保留 RAW，生成有
-来源引用的元数据记录，`text_parts=null`，并报告内容解析尚不支持。
+初版 parser chatgpt@0.1.0 仅支持此样例中的单个 JSON 数组及文本消息。现行
+chatgpt@0.2.0 的来源格式适配见 [ADR-014](../adr/ADR-014-ChatGPT分片导出与仅父节点适配.md)：
+支持编号文件、仅 parent 的节点，以及 multimodal_text 中的字符串提取；下文 canonical
+v1 字段与时间语义保持不变。未知内容类型不强转为字符串：保留来源引用的元数据记录，
+`text_parts=null`，并报告尚未支持其解析。
 
 ## 3. 身份、版本与逻辑输出包
 

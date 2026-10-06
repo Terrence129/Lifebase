@@ -201,7 +201,7 @@ def test_parser_upgrade_reuses_content_and_adds_processing_evidence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ingest_file(FIXTURES / "export-a.zip", tmp_path, SOURCE)
-    monkeypatch.setattr("lifebase.sync.collectors.chatgpt.PARSER_VERSION", "chatgpt@0.1.1")
+    monkeypatch.setattr("lifebase.sync.collectors.chatgpt.PARSER_VERSION", "chatgpt@0.2.1")
     ingest_file(FIXTURES / "export-a.zip", tmp_path, SOURCE)
     assert select(tmp_path, "SELECT count(*) FROM artifacts") == [(5,)]
     assert select(tmp_path, "SELECT count(*) FROM evidence") == [(14,)]

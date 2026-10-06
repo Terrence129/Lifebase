@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import json
 import math
 import re
 import zipfile
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from lifebase.core.envelope import Envelope
-from lifebase.core.hashing import sha256_bytes, sha256_file
 from lifebase.core.records import (
     SCHEMA_VERSION,
     Artifact,
@@ -25,31 +22,16 @@ from lifebase.core.records import (
     revision_id,
     source_record_id,
 )
+from lifebase.sync.collectors.chatgpt.export import MAX_JSON_BYTES as MAX_JSON_BYTES
+from lifebase.sync.collectors.chatgpt.export import (
+    ExportError,
+    RawExport,
+    RawMember,
+    read_export,
+)
 
-COLLECTOR_VERSION = "chatgpt@0.1.0"
-PARSER_VERSION = "chatgpt@0.1.0"
-MAX_JSON_BYTES = 128 * 1024 * 1024
-
-
-class ExportError(ValueError):
-    """来源格式错误；RAW 仍保留供核查或后续重新解析。"""
-
-
-@dataclass(frozen=True)
-class RawExport:
-    content_hash: str
-    member: str
-    member_hash: str
-    conversations: tuple[dict[str, Any], ...]
-
-
-def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in result:
-            raise ExportError("JSON 含重复 key，不能无损确定记录结构")
-        result[key] = value
-    return result
+COLLECTOR_VERSION = "chatgpt@0.2.0"
+PARSER_VERSION = "chatgpt@0.2.0"
 
 
 def _required_string(value: Any, location: str) -> str:
@@ -86,36 +68,13 @@ class ChatGPTCollector:
             return [str(error)]
 
     def ingest(self, path: str) -> RawExport:
-        try:
-            with zipfile.ZipFile(path) as archive:
-                names = archive.namelist()
-                if any(re.fullmatch(r"conversations-\d+\.json", name) for name in names):
-                    raise ExportError("本版暂不支持编号会话文件；RAW 已保留")
-                if names.count("conversations.json") != 1:
-                    raise ExportError("ZIP 必须包含唯一的 conversations.json")
-                info = archive.getinfo("conversations.json")
-                if info.file_size > MAX_JSON_BYTES:
-                    raise ExportError("conversations.json 超过本版 128 MiB 处理上限；RAW 已保留")
-                if info.flag_bits & 1:
-                    raise ExportError("本版不支持加密 ZIP；RAW 已保留")
-                # 不解压到文件系统，避免 ZIP 路径穿越，也不读取其他账户文件或媒体。
-                with archive.open(info) as stream:
-                    data = stream.read(MAX_JSON_BYTES + 1)
-                if len(data) > MAX_JSON_BYTES:
-                    raise ExportError("conversations.json 解压大小超过处理上限")
-            parsed = json.loads(data.decode("utf-8"), object_pairs_hook=_unique_object)
-        except (zipfile.BadZipFile, UnicodeError, json.JSONDecodeError, RuntimeError,
-                NotImplementedError, RecursionError) as error:
-            raise ExportError(f"无法读取会话 JSON：{type(error).__name__}") from error
-        if not isinstance(parsed, list) or not all(isinstance(item, dict) for item in parsed):
-            raise ExportError("conversations.json 顶层必须是会话对象数组")
-        return RawExport(sha256_file(Path(path)), "conversations.json", sha256_bytes(data), tuple(parsed))
+        return read_export(Path(path))
 
     def normalize(self, raw: RawExport) -> NormalizedRecords:
         events: list[Event] = []
         artifacts: list[Artifact] = []
         evidence: list[Evidence] = []
-        issues: list[str] = []
+        issues: list[str] = list(raw.issues)
         conversation_ids: set[str] = set()
 
         def timestamp(value: Any, location: str) -> datetime | None:
@@ -143,20 +102,25 @@ class ChatGPTCollector:
             return occurred, known
 
         def add_evidence(kind: RecordKind, sid: str, rid: str, revision: str,
-                         payload: dict[str, Any], pointer: str) -> None:
+                         payload: dict[str, Any], member: RawMember, pointer: str) -> None:
             envelope = Envelope(
                 source=self.source, source_record_id=sid, content_hash=raw.content_hash,
                 collector_version=COLLECTOR_VERSION, parser_version=PARSER_VERSION,
                 occurred_at=payload["occurred_at"], known_at=payload["known_at"],
                 ingested_at=self.ingested_at,
             )
-            eid = identity_hash([rid, revision, raw.content_hash, raw.member, pointer,
+            eid = identity_hash([rid, revision, raw.content_hash, member.member, pointer,
                                  COLLECTOR_VERSION, PARSER_VERSION])
-            evidence.append(Evidence(eid, kind, rid, revision, envelope, raw.member,
-                                     raw.member_hash, pointer))
+            evidence.append(Evidence(eid, kind, rid, revision, envelope, member.member,
+                                     member.member_hash, pointer))
 
-        for index, conv in enumerate(raw.conversations):
-            location = f"/{index}"
+        for member, index, conv in (
+            (raw_member, member_index, conversation)
+            for raw_member in raw.members
+            for member_index, conversation in enumerate(raw_member.conversations)
+        ):
+            pointer = f"/{index}"
+            location = member.member + ":" + pointer
             cid = _required_string(conv.get("id"), location + "/id")
             if cid in conversation_ids:
                 raise ExportError(f"{location} 重复会话 ID")
@@ -177,21 +141,26 @@ class ChatGPTCollector:
                        "occurred_at": occurred, "known_at": known}
             revision = revision_id("event", payload)
             events.append(Event(context_id, revision, SCHEMA_VERSION, **payload))
-            add_evidence("event", sid, context_id, revision, payload, location)
+            add_evidence("event", sid, context_id, revision, payload, member, pointer)
 
             message_ids: set[str] = set()
             node_records: dict[str, str | None] = {}
+            children_by_parent: dict[str, set[str]] = {key: set() for key in mapping}
             for key, node in mapping.items():
                 nloc = f"{location}/mapping/{_pointer_key(key)}"
                 if (not isinstance(node, dict) or node.get("id") != key
-                        or not {"parent", "children", "message"} <= node.keys()):
+                        or not {"parent", "message"} <= node.keys()):
                     raise ExportError(f"{nloc} 节点 ID 与 mapping key 不一致")
                 parent = node.get("parent")
                 children = node.get("children")
                 if parent is not None and (not isinstance(parent, str) or parent not in mapping):
                     raise ExportError(f"{nloc}/parent 指向缺失节点")
-                if (not isinstance(children, list) or not all(isinstance(c, str) for c in children)
-                        or len(set(children)) != len(children)):
+                if parent is not None:
+                    children_by_parent[parent].add(key)
+                if "children" in node and (
+                    not isinstance(children, list) or not all(isinstance(c, str) for c in children)
+                    or len(set(children)) != len(children)
+                ):
                     raise ExportError(f"{nloc}/children 必须是无重复的节点 ID 数组")
                 msg = node.get("message")
                 if msg is None:
@@ -224,11 +193,8 @@ class ChatGPTCollector:
             for key, node in mapping.items():
                 nloc = f"{location}/mapping/{_pointer_key(key)}"
                 parent = node.get("parent")
-                if parent is not None and key not in mapping[parent]["children"]:
-                    raise ExportError(f"{nloc} parent / children 不一致")
-                for child in node["children"]:
-                    if child not in mapping or mapping[child]["parent"] != key:
-                        raise ExportError(f"{nloc} children / parent 不一致")
+                if "children" in node and set(node["children"]) != children_by_parent[key]:
+                    raise ExportError(f"{nloc} children / parent 不一致")
                 msg = node.get("message")
                 if msg is None:
                     continue
@@ -246,6 +212,14 @@ class ChatGPTCollector:
                     if not isinstance(values, list) or not all(isinstance(p, str) for p in values):
                         raise ExportError(f"{nloc}/message/content/parts 必须是字符串数组")
                     parts = tuple(values)
+                elif fmt == "multimodal_text":
+                    values = content.get("parts")
+                    if (not isinstance(values, list)
+                            or not all(isinstance(p, (str, dict)) for p in values)):
+                        raise ExportError(f"{nloc}/message/content/parts 必须是字符串或对象数组")
+                    strings = tuple(p for p in values if isinstance(p, str))
+                    parts = strings if strings else None
+                    issues.append(f"{nloc} 仅提取 multimodal_text 字符串，其他内容保留 RAW")
                 else:
                     issues.append(f"{nloc} 不支持内容类型 {fmt}，保留 RAW 和元数据")
                 occurred, known = times(msg, nloc + "/message")
@@ -257,7 +231,8 @@ class ChatGPTCollector:
                            "occurred_at": occurred, "known_at": known}
                 revision = revision_id("artifact", payload)
                 artifacts.append(Artifact(rid, revision, SCHEMA_VERSION, **payload))
-                add_evidence("artifact", sid, rid, revision, payload, nloc + "/message")
+                message_pointer = pointer + "/mapping/" + _pointer_key(key) + "/message"
+                add_evidence("artifact", sid, rid, revision, payload, member, message_pointer)
         return NormalizedRecords(tuple(events), tuple(artifacts), tuple(evidence), tuple(issues))
 
     def checkpoint(self) -> dict[str, Any]:
