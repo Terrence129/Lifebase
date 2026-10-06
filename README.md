@@ -33,6 +33,10 @@ HumanOS 当前准备证据上下文，尚无模型生成回答；开发在 Harne
 完整验收、待验证事项与下一步见 [当前阶段](docs/reference.md#2-项目背景与当前阶段)，
 接入方式见 [Harness 接口说明](docs/harness-interface.md)。
 
+真实库和合成库已迁入独立的 private `Lifebase-data` 仓库，分别位于
+`libraries/personal/`、`libraries/demo/`；原本机路径是兼容链接。来源导出、LFS
+同步和多设备维护入口见 [数据仓库说明](docs/data-repository.md)。
+
 ## 快速开始
 
 ### 开发环境
@@ -171,7 +175,7 @@ raw.create_time / update_time 按 Unix 秒映射到 occurred_at / known_at。
 查询目前将登记的 Parquet 分区载入内存，适合原型规模数据。
 
 契约见 [canonical v1](docs/design/chatgpt-minimal-contract-draft.md)，具体行为由合成
-端到端测试覆盖。后续真实数据验证只在仓库外进行。
+端到端测试覆盖。后续真实数据验证在本代码仓库外进行。
 
 ### 只读完整性检查
 
@@ -281,7 +285,9 @@ uv run python -m benchmarks.run --sizes 1000 10000 50000 --repeats 3 --output do
 
 ## 安全红线
 
-真实个人数据与密钥永不进入 git（数据只存本地，默认 `~/Lifebase/`）；本仓库只包含代码、schema、文档与合成测试数据。完整红线与规则以 [AGENTS.md](./AGENTS.md) 为唯一事实源。
+本代码仓库只包含代码、schema、文档与合成测试数据。独立 private 数据仓库的授权范围
+和规则以 [AGENTS.md](./AGENTS.md) 为唯一事实源，目录与同步方式见
+[数据仓库说明](docs/data-repository.md)。本机原有数据路径保留为兼容链接。
 
 ## 更多
 

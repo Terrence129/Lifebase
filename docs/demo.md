@@ -4,6 +4,10 @@
 AI 回答等待 Harness 联调。规则见 [AGENTS.md](../AGENTS.md)，接口见
 [Harness 接入说明](harness-interface.md)。先用合成数据，约需 10–15 分钟。
 
+本机演示库已迁至独立 private 数据仓库的 `libraries/demo/`，`~/Lifebase-demo`
+保留为兼容链接，因此下列命令继续可用。其他设备的 clone、LFS 恢复和固定库选择
+入口见 [数据仓库说明](data-repository.md)。
+
 ## 1. 准备合成库
 
 从仓库根目录执行，依赖包含已锁定的 jieba：

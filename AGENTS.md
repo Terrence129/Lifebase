@@ -21,14 +21,14 @@
 2. 新增第三方依赖，或改动技术栈/存储栈。
 3. 修改 canonical schema 或 `Envelope` 契约。
 4. 删除、覆盖或重写任何已归档 RAW 数据。
-5. 任何可能把个人数据或密钥带入 git 的操作。
+5. 把个人数据带入本代码仓库，或扩展独立数据仓库已批准的同步范围；当前范围见 [ADR-017](docs/adr/ADR-017-独立私有数据仓库与无损迁移.md)。密钥不得进入任何 Git 仓库。
 6. 对外公开任何含真实数据或第三方数据的产物。
 7. 其他不可逆操作（删文件、改写 git 历史、force push）。
 8. git 提交（先给改动摘要，经批准再提交）。
 
 ## 2. 红线（不可违反，优先级高于任何其他规则）
 
-1. **真实个人数据永不进入 git**。真实数据只存在于本地数据目录（默认 `~/Lifebase/`）。
+1. **在本代码仓库内，真实个人数据永不进入 git**。2026-10-06 用户授权的独立例外为 `Terrence129/Lifebase-data`：真实库、合成演示库及来源导出可通过 Git / Git LFS 同步到该 private 仓库，推送前核对远端身份与私有可见性。代码仓库的忽略规则和合成测试要求保持有效；数据仓库中的本地声明不代替远端核验。
 2. **RAW 数据不可变**。导入即归档，从不修改、从不删除。
 3. **LLM 输出不是事实**。AI 推导只能是 Gold 层断言，必须附带 evidence/provenance。
 4. **本地优先、隐私优先**。最小云端暴露；不得把整个 vault 上传给 LLM 提供商。
@@ -39,7 +39,7 @@
 
 | 约束 | 验证方式 | 执行门禁 |
 | --- | --- | --- |
-| 原始数据不入 git | 提交前 `git status` 不含个人数据；`.gitignore` 覆盖 `data/` `inbox/` `*.db` `*.parquet` `.env` | `tests/unit/test_constraints.py::test_gitignore_covers_local_data_and_env` + 提交前人工 `git status` |
+| 原始数据不入代码仓库 | 提交前 `git status` 不含个人数据；`.gitignore` 覆盖 `data/` `inbox/` `*.db` `*.parquet` `.env`；普通 Git 工作树拒绝存库，独立数据仓库按标记、origin 和登记库根选择加入 | `tests/unit/test_constraints.py::test_gitignore_covers_local_data_and_env`、`tests/unit/test_data_paths.py` + 提交前人工 `git status` |
 | RAW 不可变 | vault 读回 hash 校验（涉及相关代码改动时必测） | `tests/unit/test_vault.py`（哈希与只读完整性） |
 | Collector 幂等 | 同一 fixture 重复导入产物一致，已覆盖十次导入（涉及相关代码改动时必测） | `tests/unit/test_vault.py::test_archive_roundtrip_and_idempotency` |
 | 分层依赖单向 | `core/` 不依赖上层；`sync/`、`vault/` 不依赖 `graph/`、`humanos/`；`graph/` 不依赖 `humanos/`；运行时适配在外部仓库 | `tests/unit/test_constraints.py::test_layer_import_direction` |
