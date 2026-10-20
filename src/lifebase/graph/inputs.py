@@ -25,6 +25,8 @@ class InputSelection:
     partitions: tuple[str, ...]
     sources: dict[str, str]
     fingerprints: tuple[dict[str, Any], ...]
+    # RAW SHA-256 只供外发门禁使用，不进入快照身份。
+    raw_hashes: tuple[str, ...] = ()
 
     def descriptor(self) -> dict[str, Any]:
         return {"partitions": list(self.fingerprints), "sources": self.sources}
@@ -38,6 +40,7 @@ def capture_inputs(data_dir: Path) -> InputSelection:
     imports = SourceRegistry(data_dir).successful_imports()
     sources: dict[str, str] = {}
     partitions: dict[str, dict[str, Any]] = {}
+    raw_hashes: set[str] = set()
     store = SilverStore(data_dir / "vault" / "silver")
     for row in imports:
         source, source_type = row["source"], row["source_type"]
@@ -53,10 +56,12 @@ def capture_inputs(data_dir: Path) -> InputSelection:
             "source", "content_hash", "collector_version", "parser_version", "schema_version")}
         if metadata.get("pipeline") != expected:
             raise GraphError("INPUT_INVALID", "Silver 分区与登记的处理身份不一致")
+        raw_hashes.add(row["content_hash"])
         partitions[key] = {"partition": key, "metadata_hash": sha256_file(folder / "partition.json"),
                            "files": metadata["files"]}
     return InputSelection(tuple(sorted(partitions)), dict(sorted(sources.items())),
-                          tuple(partitions[key] for key in sorted(partitions)))
+                          tuple(partitions[key] for key in sorted(partitions)),
+                          tuple(sorted(raw_hashes)))
 
 
 def unique_rows(table: pa.Table, keys: tuple[str, ...]) -> list[dict[str, Any]]:

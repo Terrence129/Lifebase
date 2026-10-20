@@ -29,11 +29,10 @@ doubao@0.1.0 的三份本地导出包含 3 个会话、5,266 条消息、5,269 �
 LifeGraph 的自动关键词图谱及 HumanOS 数据接口已实现：`graph build/status`、
 `topics`、`search`、`timeline`、`evidence`、`context`，支持可读终端和 JSON v1。
 真实本地库的 128 个会话、11,148 条消息已构图；RAW/Silver/索引保持原状。
-HumanOS 提供证据上下文，自身不生成回答；回答由外部模型消费这些工具后产生。Harness 侧
-的只读插件已在 fork 中跑通：云端 DeepSeek 模型调用五个工具并带 `record_id` /
-`evidence_id` 引用回答，验收范围与未验证项见 [Harness 接口说明](docs/harness-interface.md)。
-真实库尚未进入云端模型，本轮只在合成演示库上端到端。
-完整验收、待验证事项与下一步见 [当前阶段](docs/reference.md#2-项目背景与当前阶段)。
+HumanOS 准备证据上下文；DeepSeek Harness 插件已在合成库上联调云端模型的工具调用与引用回答，
+真实库仍不进入模型（ADR-020）。
+完整验收、待验证事项与下一步见 [当前阶段](docs/reference.md#2-项目背景与当前阶段)，
+接入方式见 [Harness 接口说明](docs/harness-interface.md)。
 
 真实库和合成库已迁入独立的 private `Lifebase-data` 仓库，分别位于
 `libraries/personal/`、`libraries/demo/`；原本机路径是兼容链接。来源导出、LFS

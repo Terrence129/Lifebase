@@ -68,7 +68,7 @@ class HumanOS:
 
     def __init__(self, data_dir: Path, destination: Destination = "local") -> None:
         snapshot = load_graph(data_dir)
-        enforce_destination(snapshot.inputs.sources, destination)
+        enforce_destination(snapshot.inputs.sources, destination, snapshot.inputs.raw_hashes)
         self.snapshot = snapshot
         self.destination = destination
         self._data = CanonicalData.from_tables(snapshot.silver, snapshot.inputs)

@@ -1,7 +1,7 @@
 # 双来源图谱终端演示
 
-更新日期：2026-10-06。当前可以体验采集、存储、自动关键词图谱和 HumanOS 只读工具。
-AI 回答等待 Harness 联调。规则见 [AGENTS.md](../AGENTS.md)，接口见
+更新日期：2026-10-20。当前可以体验采集、存储、自动关键词图谱和 HumanOS 只读工具。
+Harness 联调见 [ADR-020](adr/ADR-020-Harness联调与合成库云端放行.md)。规则见 [AGENTS.md](../AGENTS.md)，接口见
 [Harness 接入说明](harness-interface.md)。先用合成数据，约需 10–15 分钟。
 
 本机演示库已迁至独立 private 数据仓库的 `libraries/demo/`，`~/Lifebase-demo`
@@ -79,11 +79,11 @@ lifebase_demo search "synthetic-unmatched-topic"
 
 ```bash
 lifebase_demo context "野餐" --destination cloud --format json
+lifebase context "野餐" --destination cloud --format json
 ```
 
-预期退出码零，data.destination 为 cloud。两条来源的默认外发级别是 cloud_ok（ADR-018），
-合成库与真实库都按来源类型默认值执行。目的地由调用方声明，接口不做网络隔离，实际路由
-仍由消费方保证一致。接口目前不提供按来源或按库的覆盖与脱敏选项。
+合成库的全部 RAW 输入都是仓库 fixture，第一条返回 ok。真实库的来源为 local_only，
+第二条预期退出码一、error.code=EGRESS_BLOCKED，不返回消息。接口不提供策略覆盖或脱敏选项。
 
 ## 5. 完整性与更新
 
@@ -120,4 +120,4 @@ lifebase context "替换成包含主题词的问题" --format json
 ```
 
 如果 graph status 显示缺失或过期，先执行 `lifebase graph build`。输出仅在本地终端查看。
-实际模型路由和回答质量还没有验证，本次开发在 Harness 接入之前停止。
+真实库在 cloud 目的地下保持拒绝；Harness 联调只使用合成库。

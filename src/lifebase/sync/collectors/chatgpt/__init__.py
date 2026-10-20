@@ -241,4 +241,4 @@ class ChatGPTCollector:
     def metadata(self) -> dict[str, Any]:
         return {"name": "chatgpt", "source_type": "chatgpt", "sync_method": "export",
                 "collector_version": COLLECTOR_VERSION, "parser_version": PARSER_VERSION,
-                "egress_policy": "cloud_ok"}
+                "egress_policy": "local_only"}

@@ -21,66 +21,48 @@ pipeline 协调归档、Silver 发布与来源登记；实施边界见 [AGENTS.m
 
 ### 当前阶段
 
-更新日期：2026-10-07。双来源自动关键词图谱与 HumanOS 只读工具已经实现；Harness 联调的
-首个垂直切片已在该 fork 的 `feat/lifebase-readonly-plugin` 分支跑通——一个零构建只读
-插件把五个查询命令暴露为 Harness 工具，云端 DeepSeek 模型调用工具并带 `record_id` /
-`revision_id` / `evidence_id` 引用回答。加载路径、退出码映射、空结果语义与目的地透传
-都有自动化验收；实现位置、工具清单与配置见 [接口说明](harness-interface.md)。插件的交付
-形态与 `destination` 的声明责任见 [ADR-019](adr/ADR-019-只读插件的交付形态与目的地声明.md)。
+更新日期：2026-10-20。Harness 联调首轮完成：DeepSeek Harness fork 的 Lifebase 插件以云端
+DeepSeek API 在合成库上走通工具调用与引用回答；真实库在 cloud 下继续拒绝。决策见
+[ADR-020](adr/ADR-020-Harness联调与合成库云端放行.md)，接入方式见 [接口说明](harness-interface.md)。
 
-2026-10-06 聊天来源的默认外发级别由 `local_only` 放宽为 `cloud_ok`，合成库与真实库
-一致生效，见 [ADR-018](adr/ADR-018-聊天来源默认外发策略放宽.md)。
+阶段历史：2026-10-06，ChatGPT 与豆包采集、Gold 关键词图谱、HumanOS 只读工具及独立
+私有数据仓库完成验收，见 ADR-006–010、ADR-014–017。2026-10-06–07，聊天来源曾放宽为
+`cloud_ok`（ADR-018），首个零构建插件在另一 fork 分支跑通（ADR-019）；两者的外发与目的地
+决策由 ADR-020 取代。真实库为 128 个会话、11,148 条消息；
+合成演示库为 3 个会话、8 条消息。数据仓库用法见 [数据仓库说明](data-repository.md)。
 
-阶段历史：2026-10-06，ChatGPT 原型与本地验收完成，见
-[ADR-006](adr/ADR-006-首个采集切片的最小输出契约.md)、
-[ADR-007](adr/ADR-007-RAW归档与Silver快照发布.md)、
-[ADR-008](adr/ADR-008-只读完整性检查.md)、
-[ADR-009](adr/ADR-009-RAW重放与处理版本选择.md)、
-[ADR-010](adr/ADR-010-导入质量报告与合成规模基线.md)、
-[ADR-014](adr/ADR-014-ChatGPT分片导出与仅父节点适配.md)。
-同日豆包与混合来源验收完成，见 [ADR-015](adr/ADR-015-豆包JSON导入与多来源重放.md)；
-Gold 与 Harness 就绪接口的切片见 [ADR-016](adr/ADR-016-聊天图谱与Harness就绪接口.md)。
-同日真实库、合成库及来源导出迁入独立 private 数据仓库并完成同步，见
-[ADR-017](adr/ADR-017-独立私有数据仓库与无损迁移.md)。同日聊天来源默认外发级别放宽为
-云端可用，见 [ADR-018](adr/ADR-018-聊天来源默认外发策略放宽.md)。
+联调验收（2026-10-20，macOS，DeepSeek-V41-Flash，合成库）：
 
-最近本地验收（2026-10-06，conda lifebase，macOS）：两条来源的 128 个会话、11,148 条
-消息形成 22,059 个节点、49,183 条关系，包含 10,781 个关键词主题与 37,907 条提及关系。
-首次构图约 8 秒，重复构图复用产物；既有 RAW、Silver、索引的哈希、修改时间和权限
-保持不变。真实上下文召回两个来源且满足三千字上限；当天稍后外发级别放宽后，云端请求
-随之通过（[ADR-018](adr/ADR-018-聊天来源默认外发策略放宽.md)）。
+- 合成 fixture 哈希白名单放行合成库的 cloud 请求，snapshot_id 不变；真实库与混入非合成
+  输入的库仍返回 `EGRESS_BLOCKED`。Lifebase 全量校验：ruff 无告警，214 项 pytest 通过。
+- 插件 13 项 `node --test` 通过，含参数注入、目的地判定与真实 CLI 调用。
+- 8 道合成评测题：查无证据时如实说明、区分用户原话与助手建议、来源与时间筛选、
+  时间线还原、证据回查均通过。所有回答引用的 evidence_id 都出现在同一会话的
+  Lifebase 工具结果中。
+- 首轮发现模型借 Harness 的 bash 绕过插件直接运行 CLI（仅合成库，未触及真实库或凭证）；
+  加入独占工具 guard 后，bash、read、glob、subagent、workflow、web_fetch 均在派发阶段被拒绝。
 
-合成演示库包含 3 个会话、8 条消息、11 条证据、24 个主题与 32 条提及关系，图谱和
-RAW/Silver 检查均为 ok。操作见 [终端指南](demo.md)，正式 JSON 契约与合成输出见
-[接口说明](harness-interface.md)。全量校验：ruff 无告警，212 项 pytest 测试通过
-（20.84 秒）；私有仓库维护脚本也通过 ruff 与 shell 语法检查。
+### 待验证事项与停止点
 
-数据迁移验收：300 个文件以同盘重命名移动，哈希、权限、修改时间和 inode 保持
-不变，库内布局和快照身份不变。285 个 LFS 指针及本地 LFS 实体检查通过，已推送
-至独立私有远端；旧路径保留兼容链接。fresh clone 与 LFS hydrate 后，296 个已提交
-数据文件哈希一致，两个库的证据与图谱检查通过，RAW 只读权限已恢复；本次临时
-恢复库已清理。使用方式见 [数据仓库说明](data-repository.md)。
-
-### 待验证事项
-
-- 联调只在合成演示库上做了端到端；真实库（11,148 条消息）尚未进入云端模型。
-- web UI 的插件行渲染（标题、描述、图标）未经浏览器核对，只核对了导出资源与注册结果。
-- 回答质量与引用支持度只有一次人工观察，没有评测集；Gold 断言保存格式未定。
-- 查询端执行目的地声明策略，不具备网络隔离能力，不能证明调用方实际使用本地模型。
-- verify 仍为 warning，仅因既有两个 Finder .DS_Store；4 个 RAW、4 个 Silver 分区和
-  11,276 条证据没有错误。豆包会话时间、回复关系和覆盖范围缺口见 ADR-015。
-- jieba 统计关键词不做语义主题归纳或同义融合；长消息返回有界片段，冲突与时间缺失
-  通过 warnings 可见。查询继续按快照载入内存，规模基线见 [基线说明](benchmarks/README.md)。
+- 引用 ID 存在不等于结论准确：模型自查发现一题中的来源归属与措辞错误；「虚构回忆」题
+  标题结论过满。目前没有自动的结论—证据一致性检查。
+- 缺少会话列表入口，模型靠多次关键词枚举覆盖全库，单题最高约 136K token。
+- 被 guard 拒绝的工具定义仍发送给模型；Harness 升级后需复测 guard。ADR-019 的插件没有
+  guard，不能指向 Lifebase 数据。
+- 目的地是 provider 映射声明，不具备网络隔离能力。
+- verify 仍为 warning，仅因既有两个 Finder .DS_Store。豆包时间与回复关系缺口见 ADR-015。
+- jieba 统计关键词不做语义归纳或同义融合；查询按快照载入内存，见 [基线说明](benchmarks/README.md)。
 - 真实后续快照的增量语义与来源格式变化待验证；原始备份恢复仍需单独验收。
 
 ### 下一步与暂缓范围（未执行）
 
 | 分类 | 当前待开展内容 | 完成条件 |
 | --- | --- | --- |
-| Integrate 续（本地 DeepSeek Harness fork） | 真实库端到端，以及回答质量与引用支持度的可复查记录 | 在真实库跑通一次，并留下带输入与输出的评测记录 |
-| Build + Integrate | 模型回答的 Gold 断言保存 | 引用支持度通过后，确定带输入证据与模型信息的保存格式 |
+| Build（Lifebase） | 只读会话列表工具 | 模型不再靠关键词枚举全库，评测题 token 用量下降 |
+| Build（Harness 插件） | 结论—证据一致性检查与 Web 引用卡片 | 自动标出引用不支持的结论 |
+| Build + Integrate | 模型回答的 Gold 断言保存 | 引用支持度稳定后，确定带输入证据与模型信息的保存格式 |
 | Reuse（restic、现有 collector） | 后续来源快照与独立备份恢复验收 | 根据实际输入和用户确定的备份目的地展开 |
-| Defer | 语义主题、同义融合、Past Me、浏览器 UI、其他来源与自动采集 | 当前聊天切片不提供这些能力，另定范围 |
+| Defer | 真实库进入模型、本地模型路由、语义主题、Past Me、其他来源与自动采集 | 需另行决策；真实库外发须单独修订来源策略 |
 
 ## 3. 既定设计决策（未经用户同意，不得重新讨论）
 
@@ -92,8 +74,8 @@ RAW/Silver 检查均为 ok。操作见 [终端指南](demo.md)，正式 JSON 契
 - **采集方式优先级**：官方 API/OAuth > 官方导出 > 本地文件/数据库 > 现有开源提取器 > 用户触发的浏览器自动化 > 逆向。追求「可复现的采集」，不是「完美的采集」。
 - **存储栈**：本地文件系统 + 内容寻址对象存储 + Parquet + DuckDB + SQLite。PostgreSQL/pgvector 后期再引入；不为「可能以后需要」提前引入依赖。
 - **备份**：复用 restic，禁止自研加密/备份层。
-- **外发策略**：每个 collector 声明来源默认外发级别（`local_only` / `redact_before_cloud` / `cloud_ok`），HumanOS 按目的地声明执行，实际模型路由待联调（ADR-012 / ADR-016）。聊天来源的默认级别自 2026-10-06 起为 `cloud_ok`（ADR-018）。
-- **Agent 运行时边界**：Agent 执行由外部运行时承担；Lifebase 不依赖任何运行时，只对外提供只读查询接口；AI 生成内容不作为关于用户现实生活的事实证据（ADR-013）。
+- **外发策略**：每个 collector 声明来源默认外发级别（`local_only` / `redact_before_cloud` / `cloud_ok`），HumanOS 按目的地声明执行；全部输入为仓库合成 fixture 的图谱可用于云端（ADR-012 / ADR-016 / ADR-020）。
+- **Agent 运行时边界**：Agent 执行由外部运行时承担；Lifebase 不依赖任何运行时，只对外提供只读查询接口；AI 生成内容不作为关于用户现实生活的事实证据（ADR-013）。接入 Lifebase 数据的运行时 Profile 只运行 Lifebase 工具（ADR-020）。
 - **项目命名**：伞形名 **Lifebase**（包名 `lifebase`、CLI 命令 `lifebase`）；四层保留原名 LifeSync / LifeVault / LifeGraph / HumanOS，对应子包 `sync/` `vault/` `graph/` `humanos/`（ADR-002）。
 
 ## 4. 目录速查
@@ -115,5 +97,5 @@ RAW/Silver 检查均为 ok。操作见 [终端指南](demo.md)，正式 JSON 契
 
 - [Nango：LifeSync API 接入候选](design/nango-integration-hypothesis.md) — **Defer**。当多个 OAuth 来源的持续同步产生重复维护成本时，再评估以 **Integrate** 方式接入 Nango；记录适用场景、部署取舍、证据保留问题和重新评估条件，尚未选型或接入。
 - [浏览器辅助采集：从已登录的 App 获取可归档数据](design/doubao-browser-collection-hypothesis.md) — doubao-helper 文件导入已实现，见 [ADR-015](adr/ADR-015-豆包JSON导入与多来源重放.md)；浏览器自动采集与完整分页响应归档仍为 **Defer**。
-- [双来源终端切片与后续范围](design/post-collector-roadmap-proposal.md) — **Build / Reuse** 的图谱与工具已落地，见 ADR-016；**Integrate** 的 Harness 和模型回答仍待联调。
-- [Agent 运行时集成：DeepSeek Harness × Lifebase](design/agent-runtime-integration-hypothesis.md) — Agent 执行交外部运行时（**Integrate**），边界已定于 [ADR-013](adr/ADR-013-Agent运行时集成边界.md)；只读工具已经实现，模型接入待联调；自动上下文、Past Me、Agent Team 与会话回采仍为 **Defer**。
+- [双来源终端切片与后续范围](design/post-collector-roadmap-proposal.md) — **Build / Reuse** 的图谱与工具已落地，见 ADR-016；Harness 首轮联调见 ADR-020。
+- [Agent 运行时集成：DeepSeek Harness × Lifebase](design/agent-runtime-integration-hypothesis.md) — Agent 执行交外部运行时（**Integrate**），边界已定于 [ADR-013](adr/ADR-013-Agent运行时集成边界.md)；只读工具插件已在合成库联调（ADR-020）；自动上下文、Past Me、Agent Team 与会话回采仍为 **Defer**。
