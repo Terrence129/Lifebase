@@ -414,4 +414,12 @@ def test_published_contract_and_example_match_cli(mixed: Path, capsys: pytest.Ca
             for locator in match["evidence"]:
                 assert set(schema["$defs"]["evidence"]["required"]) <= locator.keys()
     # 文件里的示例与真正 CLI 在消息身份、片段、角色及证据定位上相同；快照身份可不同。
-    assert actual["data"] == sample["data"]
+    # DuckDB 按宿主时区渲染时间，示例与 CLI 的偏移可能不同，比较时统一换算到 UTC。
+    assert _instants_in_utc(actual["data"]) == _instants_in_utc(sample["data"])
+
+
+def _instants_in_utc(data: dict[str, Any]) -> dict[str, Any]:
+    matches = [{**match, **{key: datetime.fromisoformat(match[key]).astimezone(UTC)
+                            for key in ("occurred_at", "known_at") if match[key] is not None}}
+               for match in data["matches"]]
+    return {**data, "matches": matches}
