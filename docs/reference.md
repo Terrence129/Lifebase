@@ -52,7 +52,8 @@ DeepSeek API 在合成库上走通工具调用与引用回答（[ADR-020](adr/AD
 - 引用 ID 存在不等于结论准确：模型自查发现一题中的来源归属与措辞错误；「虚构回忆」题
   标题结论过满。目前没有自动的结论—证据一致性检查。
 - 缺少会话列表入口，模型靠多次关键词枚举覆盖全库，单题最高约 136K token。
-- 被 guard 拒绝的工具定义仍发送给模型；Harness 升级后需复测 guard。ADR-019 的插件没有
+- 被 guard 拒绝的工具定义仍发送给模型；Harness 升级后需复测 guard。2026-10-21 fork 同步到
+  上游 `0.2.1-rc.2` 后已复测：合成库 Profile 下 bash、read 被拒，`lifebase_search` 正常，插件测试 14 项通过。ADR-019 的插件没有
   guard，不能指向 Lifebase 数据。
 - 目的地是 provider 映射声明，不具备网络隔离能力。
 - verify 仍为 warning，仅因既有两个 Finder .DS_Store。豆包时间与回复关系缺口见 ADR-015。
