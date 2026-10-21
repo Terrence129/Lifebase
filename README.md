@@ -8,13 +8,28 @@
 
 ## 架构
 
-```
-LifeSync（采集）→ LifeVault（不可变存储）→ LifeGraph（知识图谱）→ HumanOS（AI 应用）
-```
+![Lifebase 分层架构](docs/images/architecture.svg)
+
+四层自上而下单向依赖：LifeSync 采集 → LifeVault 存储 → LifeGraph 图谱 → HumanOS 只读接口；
+`core/` 提供跨层的统一封装与内容寻址。RAW、Silver 与图谱存放在独立 private 仓库
+`Lifebase-data`，不在本代码仓库内。
+
+顶部实线来源已接入，虚线为占位。新来源实现 `sync/base.py` 的 Collector 接口、在
+`sync/collectors/__init__.py` 登记并声明外发级别（默认 `local_only`），即可复用归档、
+规范化、校验与重建。现有图谱按会话与消息建模：微信等聊天来源可直接构图，照片、GPS、
+银行等非聊天来源需先扩展 LifeGraph。
+
+### 云端提问路径
+
+![一次云端提问经过的限制](docs/images/cloud-query-path.svg)
+
+模型只能调用 `lifebase_*` 工具，库路径与目的地由 Harness 插件固定。外发门禁按整份图谱的
+来源策略判断，任一来源不是 `cloud_ok` 即返回 `EGRESS_BLOCKED`；当前 ChatGPT、豆包为
+`cloud_ok`（[ADR-021](docs/adr/ADR-021-聊天来源恢复云端可用与真实库试运行.md)）。
 
 ## 当前状态
 
-截至 **2026-10-06**，已接入 ChatGPT ZIP 与 doubao-helper JSON：来源文件 →
+截至 **2026-10-21**，已接入 ChatGPT ZIP 与 doubao-helper JSON：来源文件 →
 RAW 归档 → canonical v1 → Parquet → DuckDB 查询；已实现
 `ingest`、`list`、`query`、`verify`、`rebuild`、`quality` 六个 CLI 命令，
 collector 经来源注册表（`sync/collectors/__init__.py`）路由，支持目录导入及多来源重放。

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="600" viewBox="0 0 680 600" role="img">
+<title>云端提问路径</title>
+<desc>DeepSeek 模型发起工具调用，经 Harness 插件 guard 只放行 Lifebase 工具，再由插件以固定参数调用 lifebase CLI；外发门禁检查来源策略，不通过返回 EGRESS_BLOCKED，通过则读取 Gold 图谱快照，返回最多十条三百字的证据片段给模型。</desc>
+<style>
+.bg{fill:#FFFFFF}
+.ext{fill:#FFFFFF;stroke:#888780;stroke-width:0.8}
+.teal{fill:#E1F5EE;stroke:#0F6E56;stroke-width:0.8}
+.coral{fill:#FAECE7;stroke:#993C1D;stroke-width:0.8}
+.th,.ts{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif}
+.th{font-size:14px;font-weight:500;fill:#2C2C2A}
+.ts{font-size:12px;fill:#5F5E5A}
+.tg .th{fill:#085041}.tg .ts{fill:#0F6E56}
+.cg .th{fill:#712B13}.cg .ts{fill:#993C1D}
+.arr{stroke:#888780;stroke-width:1.5;fill:none}
+@media (prefers-color-scheme: dark){
+.bg{fill:#0D1117}
+.ext{fill:#0D1117;stroke:#888780}
+.teal{fill:#085041;stroke:#5DCAA5}
+.coral{fill:#712B13;stroke:#F0997B}
+.th{fill:#F1EFE8}.ts{fill:#B4B2A9}
+.tg .th{fill:#E1F5EE}.tg .ts{fill:#9FE1CB}
+.cg .th{fill:#FAECE7}.cg .ts{fill:#F5C4B3}
+}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="bg" x="0" y="0" width="680" height="600"/>
+
+<g class="cg"><rect class="coral" x="120" y="30" width="280" height="56" rx="8"/><text class="th" x="260" y="48" text-anchor="middle" dominant-baseline="central">DeepSeek 模型</text><text class="ts" x="260" y="68" text-anchor="middle" dominant-baseline="central">发起 lifebase_* 工具调用</text></g>
+<line class="arr" x1="260" y1="86" x2="260" y2="124" marker-end="url(#a)"/>
+
+<rect class="ext" x="120" y="126" width="280" height="56" rx="8"/><text class="th" x="260" y="144" text-anchor="middle" dominant-baseline="central">Harness 插件 guard</text><text class="ts" x="260" y="164" text-anchor="middle" dominant-baseline="central">bash、文件、web 等一律拒绝</text>
+<line class="arr" x1="260" y1="182" x2="260" y2="220" marker-end="url(#a)"/>
+
+<g class="tg"><rect class="teal" x="120" y="222" width="280" height="56" rx="8"/><text class="th" x="260" y="240" text-anchor="middle" dominant-baseline="central">lifebase CLI</text><text class="ts" x="260" y="260" text-anchor="middle" dominant-baseline="central">库路径和目的地由插件固定</text></g>
+<line class="arr" x1="260" y1="278" x2="260" y2="316" marker-end="url(#a)"/>
+
+<g class="tg"><rect class="teal" x="120" y="318" width="280" height="56" rx="8"/><text class="th" x="260" y="336" text-anchor="middle" dominant-baseline="central">外发门禁</text><text class="ts" x="260" y="356" text-anchor="middle" dominant-baseline="central">全部来源都是 cloud_ok？</text></g>
+<text class="ts" x="429" y="334" text-anchor="middle">否</text>
+<line class="arr" x1="400" y1="346" x2="458" y2="346" marker-end="url(#a)"/>
+<rect class="ext" x="460" y="318" width="180" height="56" rx="8"/><text class="th" x="550" y="336" text-anchor="middle" dominant-baseline="central">EGRESS_BLOCKED</text><text class="ts" x="550" y="356" text-anchor="middle" dominant-baseline="central">不返回任何消息</text>
+<text class="ts" x="272" y="396" dominant-baseline="central">是</text>
+<line class="arr" x1="260" y1="374" x2="260" y2="412" marker-end="url(#a)"/>
+
+<g class="tg"><rect class="teal" x="120" y="414" width="280" height="56" rx="8"/><text class="th" x="260" y="432" text-anchor="middle" dominant-baseline="central">Gold 图谱快照</text><text class="ts" x="260" y="452" text-anchor="middle" dominant-baseline="central">只读，不碰 RAW</text></g>
+<line class="arr" x1="260" y1="470" x2="260" y2="508" marker-end="url(#a)"/>
+
+<g class="tg"><rect class="teal" x="120" y="510" width="280" height="56" rx="8"/><text class="th" x="260" y="528" text-anchor="middle" dominant-baseline="central">证据片段回传模型</text><text class="ts" x="260" y="548" text-anchor="middle" dominant-baseline="central">≤10 条 × 300 字 + evidence_id</text></g>
+</svg>

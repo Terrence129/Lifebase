@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="720" viewBox="0 0 680 720" role="img">
+<title>Lifebase 分层架构</title>
+<desc>已接入 ChatGPT 与豆包导出，微信、照片 GPS 与更多来源为虚线占位，都通过统一的 Collector 接口进入 LifeSync，经 LifeVault、LifeGraph、HumanOS 提供给终端 CLI 和 Harness 插件，后者调用云端 DeepSeek。</desc>
+<style>
+.bg{fill:#FFFFFF}
+.band{fill:#F7F6F2;stroke:#B4B2A9;stroke-width:0.8}
+.ext{fill:#FFFFFF;stroke:#888780;stroke-width:0.8}
+.teal{fill:#E1F5EE;stroke:#0F6E56;stroke-width:0.8}
+.coral{fill:#FAECE7;stroke:#993C1D;stroke-width:0.8}
+.th,.ts{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif}
+.th{font-size:14px;font-weight:500;fill:#2C2C2A}
+.ts{font-size:12px;fill:#5F5E5A}
+.tg .th{fill:#085041}.tg .ts{fill:#0F6E56}
+.cg .th{fill:#712B13}.cg .ts{fill:#993C1D}
+.arr{stroke:#888780;stroke-width:1.5;fill:none}
+.dash{stroke-dasharray:4 3}
+@media (prefers-color-scheme: dark){
+.bg{fill:#0D1117}
+.band{fill:#1C1C1B;stroke:#5F5E5A}
+.ext{fill:#0D1117;stroke:#888780}
+.teal{fill:#085041;stroke:#5DCAA5}
+.coral{fill:#712B13;stroke:#F0997B}
+.th{fill:#F1EFE8}.ts{fill:#B4B2A9}
+.tg .th{fill:#E1F5EE}.tg .ts{fill:#9FE1CB}
+.cg .th{fill:#FAECE7}.cg .ts{fill:#F5C4B3}
+}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="bg" x="0" y="0" width="680" height="720"/>
+
+<rect class="ext" x="40" y="30" width="110" height="56" rx="8"/><text class="th" x="95" y="48" text-anchor="middle" dominant-baseline="central">ChatGPT</text><text class="ts" x="95" y="68" text-anchor="middle" dominant-baseline="central">已接入</text>
+<rect class="ext" x="162" y="30" width="110" height="56" rx="8"/><text class="th" x="217" y="48" text-anchor="middle" dominant-baseline="central">豆包</text><text class="ts" x="217" y="68" text-anchor="middle" dominant-baseline="central">已接入</text>
+<rect class="ext dash" x="284" y="30" width="110" height="56" rx="8"/><text class="th" x="339" y="48" text-anchor="middle" dominant-baseline="central">微信</text><text class="ts" x="339" y="68" text-anchor="middle" dominant-baseline="central">占位</text>
+<rect class="ext dash" x="406" y="30" width="110" height="56" rx="8"/><text class="th" x="461" y="48" text-anchor="middle" dominant-baseline="central">照片 · GPS</text><text class="ts" x="461" y="68" text-anchor="middle" dominant-baseline="central">占位</text>
+<rect class="ext dash" x="528" y="30" width="110" height="56" rx="8"/><text class="th" x="583" y="48" text-anchor="middle" dominant-baseline="central">更多来源</text><text class="ts" x="583" y="68" text-anchor="middle" dominant-baseline="central">邮件 · 银行 …</text>
+<line class="arr" x1="95" y1="86" x2="95" y2="120" marker-end="url(#a)"/>
+<line class="arr" x1="217" y1="86" x2="217" y2="120" marker-end="url(#a)"/>
+<line class="arr dash" x1="339" y1="86" x2="339" y2="120" marker-end="url(#a)"/>
+<line class="arr dash" x1="461" y1="86" x2="461" y2="120" marker-end="url(#a)"/>
+<line class="arr dash" x1="583" y1="86" x2="583" y2="120" marker-end="url(#a)"/>
+
+<rect class="band" x="40" y="122" width="600" height="80" rx="12"/>
+<text class="th" x="56" y="152" dominant-baseline="central">LifeSync 采集</text>
+<text class="ts" x="56" y="172" dominant-baseline="central">sync/</text>
+<g class="tg"><rect class="teal" x="210" y="134" width="128" height="56" rx="8"/><text class="th" x="274" y="152" text-anchor="middle" dominant-baseline="central">Collectors</text><text class="ts" x="274" y="172" text-anchor="middle" dominant-baseline="central">统一接口 可插拔</text></g>
+<g class="tg"><rect class="teal" x="353" y="134" width="128" height="56" rx="8"/><text class="th" x="417" y="152" text-anchor="middle" dominant-baseline="central">Pipeline</text><text class="ts" x="417" y="172" text-anchor="middle" dominant-baseline="central">归档 + 规范化</text></g>
+<g class="tg"><rect class="teal" x="496" y="134" width="128" height="56" rx="8"/><text class="th" x="560" y="152" text-anchor="middle" dominant-baseline="central">来源登记</text><text class="ts" x="560" y="172" text-anchor="middle" dominant-baseline="central">registry.sqlite</text></g>
+<line class="arr" x1="417" y1="202" x2="417" y2="220" marker-end="url(#a)"/>
+
+<rect class="band" x="40" y="222" width="600" height="80" rx="12"/>
+<text class="th" x="56" y="252" dominant-baseline="central">LifeVault 存储</text>
+<text class="ts" x="56" y="272" dominant-baseline="central">vault/ · 私有数据仓库</text>
+<g class="tg"><rect class="teal" x="210" y="234" width="128" height="56" rx="8"/><text class="th" x="274" y="252" text-anchor="middle" dominant-baseline="central">RAW · Bronze</text><text class="ts" x="274" y="272" text-anchor="middle" dominant-baseline="central">不可变 内容寻址</text></g>
+<g class="tg"><rect class="teal" x="353" y="234" width="128" height="56" rx="8"/><text class="th" x="417" y="252" text-anchor="middle" dominant-baseline="central">Silver</text><text class="ts" x="417" y="272" text-anchor="middle" dominant-baseline="central">规范化 Parquet</text></g>
+<g class="tg"><rect class="teal" x="496" y="234" width="128" height="56" rx="8"/><text class="th" x="560" y="252" text-anchor="middle" dominant-baseline="central">校验与重建</text><text class="ts" x="560" y="272" text-anchor="middle" dominant-baseline="central">verify · rebuild</text></g>
+<line class="arr" x1="417" y1="302" x2="417" y2="320" marker-end="url(#a)"/>
+
+<rect class="band" x="40" y="322" width="600" height="80" rx="12"/>
+<text class="th" x="56" y="352" dominant-baseline="central">LifeGraph 图谱</text>
+<text class="ts" x="56" y="372" dominant-baseline="central">graph/ · Gold</text>
+<g class="tg"><rect class="teal" x="210" y="334" width="128" height="56" rx="8"/><text class="th" x="274" y="352" text-anchor="middle" dominant-baseline="central">图谱快照</text><text class="ts" x="274" y="372" text-anchor="middle" dominant-baseline="central">会话 消息 主题</text></g>
+<g class="tg"><rect class="teal" x="353" y="334" width="128" height="56" rx="8"/><text class="th" x="417" y="352" text-anchor="middle" dominant-baseline="central">jieba 关键词</text><text class="ts" x="417" y="372" text-anchor="middle" dominant-baseline="central">TF-IDF 统计</text></g>
+<g class="tg"><rect class="teal" x="496" y="334" width="128" height="56" rx="8"/><text class="th" x="560" y="352" text-anchor="middle" dominant-baseline="central">Evidence</text><text class="ts" x="560" y="372" text-anchor="middle" dominant-baseline="central">回指原始位置</text></g>
+<line class="arr" x1="417" y1="402" x2="417" y2="420" marker-end="url(#a)"/>
+
+<rect class="band" x="40" y="422" width="600" height="80" rx="12"/>
+<text class="th" x="56" y="452" dominant-baseline="central">HumanOS 接口</text>
+<text class="ts" x="56" y="472" dominant-baseline="central">humanos/ · 只读</text>
+<g class="tg"><rect class="teal" x="210" y="434" width="128" height="56" rx="8"/><text class="th" x="274" y="452" text-anchor="middle" dominant-baseline="central">只读工具 ×5</text><text class="ts" x="274" y="472" text-anchor="middle" dominant-baseline="central">search context…</text></g>
+<g class="tg"><rect class="teal" x="353" y="434" width="128" height="56" rx="8"/><text class="th" x="417" y="452" text-anchor="middle" dominant-baseline="central">外发门禁</text><text class="ts" x="417" y="472" text-anchor="middle" dominant-baseline="central">按来源策略</text></g>
+<g class="tg"><rect class="teal" x="496" y="434" width="128" height="56" rx="8"/><text class="th" x="560" y="452" text-anchor="middle" dominant-baseline="central">JSON v1</text><text class="ts" x="560" y="472" text-anchor="middle" dominant-baseline="central">终端 / 机器可读</text></g>
+<line class="arr" x1="310" y1="502" x2="310" y2="530" marker-end="url(#a)"/>
+<line class="arr" x1="524" y1="502" x2="524" y2="530" marker-end="url(#a)"/>
+
+<rect class="ext" x="210" y="532" width="200" height="56" rx="8"/><text class="th" x="310" y="550" text-anchor="middle" dominant-baseline="central">lifebase CLI</text><text class="ts" x="310" y="570" text-anchor="middle" dominant-baseline="central">本地终端使用</text>
+<rect class="ext" x="424" y="532" width="200" height="56" rx="8"/><text class="th" x="524" y="550" text-anchor="middle" dominant-baseline="central">Harness 插件</text><text class="ts" x="524" y="570" text-anchor="middle" dominant-baseline="central">外部仓库 · 独占 guard</text>
+<line class="arr" x1="524" y1="588" x2="524" y2="620" marker-end="url(#a)"/>
+<g class="cg"><rect class="coral" x="424" y="622" width="200" height="56" rx="8"/><text class="th" x="524" y="640" text-anchor="middle" dominant-baseline="central">DeepSeek API</text><text class="ts" x="524" y="660" text-anchor="middle" dominant-baseline="central">云端 · 只收命中片段</text></g>
+
+<rect class="teal" x="40" y="628" width="12" height="12" rx="2"/>
+<text class="ts" x="60" y="634" dominant-baseline="central">Lifebase 代码仓库内</text>
+<rect class="ext" x="40" y="648" width="12" height="12" rx="2"/>
+<text class="ts" x="60" y="654" dominant-baseline="central">外部输入或使用方</text>
+<rect class="coral" x="40" y="668" width="12" height="12" rx="2"/>
+<text class="ts" x="60" y="674" dominant-baseline="central">云端服务</text>
+<rect class="ext dash" x="40" y="688" width="12" height="12" rx="2"/>
+<text class="ts" x="60" y="694" dominant-baseline="central">虚线：占位，尚未实现</text>
+</svg>

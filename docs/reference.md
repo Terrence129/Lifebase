@@ -12,6 +12,9 @@ LifeGraph  → 已实现：来源 / 会话 / 消息版本 / 关键词主题 / Ev
 HumanOS    → 已实现：只读 Search / Timeline / Evidence / Context；AI / Trips / Past Me 待接入
 ```
 
+图示见 README 的 [架构](../README.md#架构)，源文件为 `images/architecture.svg` 与
+`images/cloud-query-path.svg`；架构或外发路径变化时同步更新。
+
 数据流：`Collector → RAW → Normalizer → Canonical records`。Collector 生成规范化记录，
 pipeline 协调归档、Silver 发布与来源登记；实施边界见 [AGENTS.md](../AGENTS.md)。
 
