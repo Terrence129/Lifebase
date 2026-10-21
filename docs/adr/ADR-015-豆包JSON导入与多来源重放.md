@@ -10,7 +10,7 @@ messages 同时保存工具提取的 text 与可选 raw 消息对象；消息时
 现有 RAW、Silver、查询和质量统计可复用，但只有 ChatGPT ZIP 解析器，证据校验
 也只读取 ZIP。增加第二来源后，全部来源重放不能再假设只有一个 collector。
 
-输入行为核对了用户的三份本地导出及工具的
+输入行为核对了用户的本地导出及工具的
 [导出源码](https://github.com/chensanle/doubao-helper/blob/main/content.js)。
 工具的 API 模式筛选有文本的消息并去重；导出保留入选消息的 raw 对象，没有保存
 全部分页响应。rawCount 与导出消息数的差值不能直接解释为缺失消息数量。
@@ -71,13 +71,12 @@ messages 同时保存工具提取的 text 与可选 raw 消息对象；消息时
 验收覆盖身份与时间校验、原字节及证据指针、十次重复导入、重叠版本与账户隔离、
 RAW 恢复、目录与 inbox、混合来源重放、历史来源和证据篡改检查。
 
-本地三份真实 JSON 完成 ingest → quality → 聚合 query → 重复 ingest → 来源
-rebuild → 全来源 rebuild → verify：3 个会话、5,266 条消息、5,269 条证据。
+本地真实 JSON 完成 ingest → quality → 聚合 query → 重复 ingest → 来源
+rebuild → 全来源 rebuild → verify。
 消息 creation/update 时间均有值，无空文本；会话两个时间字段为空，quality=warning。
-三份文件均出现 rawCount 差异诊断，覆盖范围仍未知。
+每份文件均出现 rawCount 差异诊断，覆盖范围仍未知。
 
-合并 ChatGPT 后为 4 个 RAW 对象、4 个归档条目、4 个 Silver 分区、11,276 条证据。
-RAW、Silver 及证据检查没有错误；verify=warning，原因仅为对象目录和 Silver
+合并 ChatGPT 后，RAW、Silver 及证据检查没有错误；verify=warning，原因仅为对象目录和 Silver
 目录已有的两个 Finder .DS_Store 文件（raw_path_invalid / silver_path_invalid）。
 这些文件保持原状，没有放宽校验器。原始输入与既有 ChatGPT RAW、Silver 未改变；
 重复导入及两种 rebuild 保持持久化文件哈希、权限及 mtime 不变。

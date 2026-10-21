@@ -29,13 +29,13 @@ DeepSeek API 在合成库上走通工具调用与引用回答（[ADR-020](adr/AD
 2026-10-21 用户批准真实库使用云端模型：ChatGPT、豆包默认 `cloud_ok`，目的地仅限 DeepSeek 官方 API，
 见 [ADR-021](adr/ADR-021-聊天来源恢复云端可用与真实库试运行.md)；真实库已由用户在 Harness 中试运行一题。
 同日新增只读会话列表工具 `conversations` 与 timeline 分页，见 [ADR-022](adr/ADR-022-会话列表工具与分页.md)：ruff 无告警，
-223 项 pytest 与插件 17 项 `node --test` 通过；真实库 128 个会话两页列完，每 100 个会话约 5 万字符。
+223 项 pytest 与插件 17 项 `node --test` 通过；真实库全部会话分页列完，每 100 个会话约 5 万字符。
 接入方式见 [接口说明](harness-interface.md)。
 
 阶段历史：2026-10-06，ChatGPT 与豆包采集、Gold 关键词图谱、HumanOS 只读工具及独立
 私有数据仓库完成验收，见 ADR-006–010、ADR-014–017。2026-10-06–07，聊天来源曾放宽为
 `cloud_ok`（ADR-018），首个零构建插件在另一 fork 分支跑通（ADR-019）；两者的外发与目的地
-决策由 ADR-020 取代，聊天来源外发级别又由 ADR-021 恢复为 `cloud_ok`。真实库为 128 个会话、11,148 条消息；
+决策由 ADR-020 取代，聊天来源外发级别又由 ADR-021 恢复为 `cloud_ok`。
 合成演示库为 3 个会话、8 条消息。数据仓库用法见 [数据仓库说明](data-repository.md)。
 
 联调验收（2026-10-20，macOS，DeepSeek-V41-Flash，合成库）：

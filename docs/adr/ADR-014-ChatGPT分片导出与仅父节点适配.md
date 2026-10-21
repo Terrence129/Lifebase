@@ -58,12 +58,12 @@ multimodal_text 消息同时含字符串和媒体对象，全部作为非文本�
 已有合成 fixture 派生到测试临时目录，覆盖清单不一致、JSON 上限、
 分支、混合内容、逐成员证据、十次导入/重放稳定性及缺失派生数据恢复。
 
-2026-10-06，本地单份官方导出验收完成：125 个会话、5,882 条消息、6,007 条证据。
+2026-10-06，本地官方导出验收完成。
 ingest → verify → quality → 聚合 query → 重复 ingest → rebuild → verify 全部成功；
 原始 ZIP、已归档 RAW 与 manifest 的哈希、权限及 mtime 保持不变。重复导入和重放
 未改变持久化文件。真实数据的缺失派生分区恢复没有执行，恢复路径由合成样例覆盖。
 
-所有消息都有合法 create_time，但消息 known_at 全部为空。109 条 multimodal_text
-记录提取到字符串。quality 为 warning：缺失消息版本时间、14 条空文本版本及未完整
+所有消息都有合法 create_time，但消息 known_at 全部为空。部分 multimodal_text
+记录提取到字符串。quality 为 warning：缺失消息版本时间、存在空文本版本及未完整
 支持的内容类型。此验收只证明该份导出的可处理性，不证明账户导出覆盖完整、媒体理解
 或未来其他导出格式的兼容性。约束见 [AGENTS.md](../../AGENTS.md)。

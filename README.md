@@ -36,15 +36,14 @@ collector 经来源注册表（`sync/collectors/__init__.py`）路由，支持�
 
 已记录 1,000 / 10,000 / 50,000 基础消息的合成规模基线。
 collector/parser `chatgpt@0.2.0` 支持编号会话文件、
-仅 parent 的节点及混合内容中的字符串。单份真实导出已完成 125 个会话、5,882 条
-消息与 6,007 条证据的导入、完整性检查、聚合查询、重复导入和重放验收。
-doubao@0.1.0 的三份本地导出包含 3 个会话、5,266 条消息、5,269 条证据，重复导入
+仅 parent 的节点及混合内容中的字符串。真实 ChatGPT 导出已完成导入、完整性检查、
+聚合查询、重复导入和重放验收。doubao@0.1.0 的本地导出同样完成验收，重复导入
 和混合来源重放保持持久化文件不变。全部数据检查没有错误；合并仓库 verify 为 warning，
 仅因两个已有 Finder .DS_Store 文件。豆包会话时间、回复关系与覆盖范围仍有缺口。
 LifeGraph 的自动关键词图谱及 HumanOS 数据接口已实现：`graph build/status`、
 `topics`、`conversations`、`search`、`timeline`、`evidence`、`context`，支持可读终端和 JSON v1；
 会话列表与 timeline 支持分页（[ADR-022](docs/adr/ADR-022-会话列表工具与分页.md)）。
-真实本地库的 128 个会话、11,148 条消息已构图；RAW/Silver/索引保持原状。
+真实本地库已构图；RAW/Silver/索引保持原状。
 HumanOS 准备证据上下文；DeepSeek Harness 插件已在合成库上联调云端模型的工具调用与引用回答，
 真实库经 ADR-021 批准可由云端模型回答（仅 DeepSeek 官方 API）。
 完整验收、待验证事项与下一步见 [当前阶段](docs/reference.md#2-项目背景与当前阶段)，
@@ -273,10 +272,10 @@ lifebase --data-dir ~/Lifebase-demo quality --source chatgpt:synthetic-account -
 
 `text_versions` 只计 `text` 类型；`multimodal_text` 即使提取出字符串，仍列在不支持
 内容类型统计中，表示该类型没有完整解析。查询可提取文本时使用 `text_parts IS NOT NULL`，
-不要只按 `content_format='text'` 筛选。ChatGPT 单份真实导出验收中，quality 为 warning：
-消息 known_at 全部为空、14 条空文本版本及部分内容类型未完整解析；109 条
+不要只按 `content_format='text'` 筛选。ChatGPT 真实导出验收中，quality 为 warning：
+消息 known_at 全部为空、存在空文本版本及部分内容类型未完整解析；部分
 multimodal_text 记录提取到字符串。此验收不代表账户覆盖完整或媒体已被理解。
-豆包三份导出的消息 creation/update 时间均有值，无空文本；quality 为 warning，
+豆包导出的消息 creation/update 时间均有值，无空文本；quality 为 warning，
 因为会话时间为空。其全部 text_versions 仅指工具已导出的文本，不涵盖过滤掉的
 消息、回复关系或未处理的媒体；这些范围限制由来源 diagnostics 说明。
 
