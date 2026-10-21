@@ -363,6 +363,7 @@ def test_tools_do_not_read_raw(mixed: Path, monkeypatch: pytest.MonkeyPatch) -> 
         result = service.search("野餐")
         eid = result.data["matches"][0]["evidence"][0]["evidence_id"]
         assert service.evidence(eid).status == "ok"
+        assert service.conversations().status == "ok"
 
 
 def test_json_cli_contract_readable_output_and_errors(mixed: Path, capsys: pytest.CaptureFixture[str],
@@ -375,7 +376,8 @@ def test_json_cli_contract_readable_output_and_errors(mixed: Path, capsys: pytes
     code, value = call("graph", "build")
     assert code == 0 and value["api_version"] == 1 and value["data"]["counts"]["messages"] == 8
     before = fingerprint(mixed)
-    for args in (("graph", "status"), ("topics",), ("search", "野餐"), ("context", "野餐")):
+    for args in (("graph", "status"), ("topics",), ("conversations",), ("search", "野餐"),
+                 ("context", "野餐")):
         code, value = call(*args)
         assert code == 0 and value["api_version"] == 1 and value["status"] == "ok"
     match = value["data"]["matches"][0]
@@ -387,6 +389,10 @@ def test_json_cli_contract_readable_output_and_errors(mixed: Path, capsys: pytes
     code, value = call("context", "野餐", "--destination", "cloud", "--source", CHATGPT)
     assert code == 1 and value["error"]["code"] == "EGRESS_BLOCKED"
     assert "matches" not in value["data"]
+    code, value = call("conversations", "--destination", "cloud", "--source", CHATGPT)
+    assert code == 1 and value["error"]["code"] == "EGRESS_BLOCKED"
+    assert "conversations" not in value["data"]
+    assert call("conversations", "--offset", "-1")[1]["error"]["code"] == "INVALID_REQUEST"
     assert call("search", "野餐", "--limit", "0")[1]["error"]["code"] == "INVALID_REQUEST"
     assert run(["search", "野餐", "--data-dir", str(mixed)]) == 0
     assert "图谱路径" in capsys.readouterr().out
@@ -423,3 +429,115 @@ def _instants_in_utc(data: dict[str, Any]) -> dict[str, Any]:
                             for key in ("occurred_at", "known_at") if match[key] is not None}}
                for match in data["matches"]]
     return {**data, "matches": matches}
+
+
+def _conversation_titles(result: Any) -> list[str]:
+    return [item["title"] for item in result.data["conversations"]]
+
+
+def test_conversations_list_metadata_without_message_text(mixed: Path) -> None:
+    build_graph(mixed)
+    with HumanOS(mixed) as service:
+        result = service.conversations(limit=100)
+        items = result.data["conversations"]
+        assert result.status == "ok" and result.data["total"] == 3 and len(items) == 3
+        assert result.data["offset"] == 0 and result.data["next_offset"] is None
+        assert set(_conversation_titles(result)) == {row["title"] for row in service._data.events}
+        assert sum(item["messages"] for item in items) == 8
+        assert {item["source"] for item in items} == {CHATGPT, DOUBAO}
+        # 最近活动倒序，没有带时间消息的会话排最后。
+        instants = [item["last_message_at"] for item in items if item["last_message_at"] is not None]
+        assert instants == sorted(instants, reverse=True)
+        message_text = {part for row in service._data.messages for part in row["text_parts"] or []}
+        for item in items:
+            assert {"excerpt", "text_parts", "matches"}.isdisjoint(item)
+            assert not any(part in str(item) for part in message_text if len(part) > 8)
+            assert 0 <= item["user_messages"] <= item["messages"]
+            assert len(item["top_topics"]) <= 5 and item["evidence_ids"]
+            for eid in item["evidence_ids"]:
+                locator = service.evidence(eid).data["evidence"]
+                assert locator["record_kind"] == "event"
+                assert locator["record_id"] == item["conversation_id"]
+        picnic = next(item for item in items if item["title"] == "合成示例：准备野餐")
+        assert "野餐" in picnic["top_topics"]
+        doubao = service.conversations(source=DOUBAO)
+        assert {item["source"] for item in doubao.data["conversations"]} == {DOUBAO}
+        assert doubao.data["total"] == 1
+
+
+def test_conversations_pagination_covers_every_conversation_once(mixed: Path) -> None:
+    build_graph(mixed)
+    with HumanOS(mixed) as service:
+        full = _conversation_titles(service.conversations(limit=100))
+        pages, offset = [], 0
+        while offset is not None:
+            page = service.conversations(limit=2, offset=offset)
+            pages.extend(_conversation_titles(page))
+            truncated = {warning.code: warning.count for warning in page.warnings}.get("RESULTS_TRUNCATED")
+            assert truncated == (page.data["total"] - offset - 2 if page.data["next_offset"] else None)
+            offset = page.data["next_offset"]
+        assert pages == full
+        beyond = service.conversations(offset=3)
+        assert beyond.status == "empty" and beyond.data["next_offset"] is None
+        assert "INSUFFICIENT_EVIDENCE" in {warning.code for warning in beyond.warnings}
+
+
+def test_conversations_time_window_reports_unknown_time(mixed: Path) -> None:
+    build_graph(mixed)
+    with HumanOS(mixed) as service:
+        inside = service.conversations(since=parse_time("2026-01-02"), until=parse_time("2026-01-03"))
+        assert "合成示例：回忆与时间缺失" in _conversation_titles(inside)
+        before = service.conversations(until=parse_time("2026-01-02"))
+        assert "合成示例：回忆与时间缺失" not in _conversation_titles(before)
+        assert {warning.code: warning.count for warning in before.warnings}["UNKNOWN_TIME_EXCLUDED"] >= 1
+        with pytest.raises(ToolError, match="since"):
+            service.conversations(since=parse_time("2026-01-03"), until=parse_time("2026-01-02"))
+
+
+def test_conversation_titles_are_bounded(tmp_path: Path) -> None:
+    root = tmp_path / "data"
+    ingest_file(variant(tmp_path, lambda value: value[0].update(title="合成长标题" * 30)), root, CHATGPT)
+    build_graph(root)
+    with HumanOS(root) as service:
+        item = next(item for item in service.conversations().data["conversations"]
+                    if item["title"].startswith("合成长标题"))
+        assert len(item["title"]) == 80 and item["title_truncated"]
+
+
+@pytest.mark.parametrize("offset", [-1, True, 1_000_001])
+def test_invalid_offsets(mixed: Path, offset: int) -> None:
+    build_graph(mixed)
+    with HumanOS(mixed) as service:
+        conv = service._data.events[0]["record_id"]
+        for method in (service.conversations, lambda **kwargs: service.timeline(conv, **kwargs)):
+            with pytest.raises(ToolError, match="offset"):
+                method(offset=offset)
+
+
+def test_timeline_offset_pages_long_conversations(mixed: Path) -> None:
+    build_graph(mixed)
+    with HumanOS(mixed) as service:
+        conv = next(row["record_id"] for row in service._data.events
+                    if row["title"] == "合成示例：准备野餐")
+        full = [match["record_id"] for match in service.timeline(conv, limit=100).data["matches"]]
+        assert len(full) == 3
+        first = service.timeline(conv, limit=2)
+        assert first.data["next_offset"] == 2
+        assert {warning.code: warning.count for warning in first.warnings}["RESULTS_TRUNCATED"] == 1
+        last = service.timeline(conv, limit=2, offset=2)
+        assert last.data["next_offset"] is None
+        assert "RESULTS_TRUNCATED" not in {warning.code for warning in last.warnings}
+        assert [match["record_id"] for match in first.data["matches"] + last.data["matches"]] == full
+
+
+def test_published_contract_covers_conversations(mixed: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    schema = json.loads((Path(__file__).parents[2] / "schemas/humanos-api-v1.json").read_text())
+    build_graph(mixed)
+    assert run(["conversations", "--data-dir", str(mixed), "--format", "json"]) == 0
+    response = json.loads(capsys.readouterr().out)
+    assert response["tool"] in schema["properties"]["tool"]["enum"]
+    assert {"total", "offset", "next_offset", "conversations"} <= response["data"].keys()
+    definition = schema["$defs"]["conversation"]
+    for item in response["data"]["conversations"]:
+        assert set(definition["required"]) == item.keys()
+        assert len(item["title"]) <= definition["properties"]["title"]["maxLength"]

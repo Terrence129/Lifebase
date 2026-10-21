@@ -60,6 +60,23 @@ class MessageMatch:
 
 
 @dataclass(frozen=True)
+class ConversationSummary:
+    """会话元数据与标题；不含消息正文。消息数按身份计，不按内容版本计。
+    只给 evidence_id，完整定位经 evidence 工具读取，以控制列表体积。"""
+    conversation_id: str
+    source: str
+    title: str | None
+    title_truncated: bool
+    first_message_at: datetime | None
+    last_message_at: datetime | None
+    messages: int
+    user_messages: int
+    top_topics: tuple[str, ...]
+    evidence_ids: tuple[str, ...]
+    version_conflict: bool
+
+
+@dataclass(frozen=True)
 class ToolResult:
     tool: str
     status: str

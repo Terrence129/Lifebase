@@ -16,6 +16,17 @@ def render(result: ToolResult) -> str:
     for topic in data.get("topics", []):
         lines.append(f"{topic['term']} — {topic['messages']} 条消息，"
                      f"{topic['conversations']} 个会话，{topic['sources']} 个来源")
+    for item in data.get("conversations", []):
+        span = " — ".join(instant.isoformat() if instant is not None else "时间未知"
+                          for instant in (item["first_message_at"], item["last_message_at"]))
+        lines.append(f"\n[{item['source']}] {item['title'] or '（无标题）'}"
+                     + (" …" if item["title_truncated"] else ""))
+        lines.append(f"{span}；{item['messages']} 条消息，其中用户 {item['user_messages']} 条")
+        if item["top_topics"]:
+            lines.append("主题: " + "、".join(item["top_topics"]))
+        lines.append(f"会话: {item['conversation_id']}")
+    if data.get("next_offset") is not None:
+        lines.append(f"\n还有更多结果，下一页使用 --offset {data['next_offset']}")
     if result.tool == "context":
         lines.append("证据上下文已准备；AI 回答等待 Harness 接入。")
     for match in data.get("matches", []):

@@ -46,6 +46,14 @@ lifebase_demo search "野餐" --since 2026-01-01 --until 2026-01-02
 
 ## 3. 阅读会话并查看证据
 
+先列出全部会话：按最近活动排序，显示标题、时间跨度、消息数和主题词，不显示正文。
+三个合成会话一页列完；真实库可用 `--limit 100` 加上一页返回的 `--offset` 翻页。
+
+```bash
+lifebase_demo conversations
+lifebase_demo conversations --limit 2 --offset 2
+```
+
 下面的命令自动从合成检索结果取得 ID，也可以手动复制终端显示的 ID：
 
 ```bash
@@ -115,6 +123,7 @@ lifebase_demo search "野餐" --format json
 ```bash
 lifebase graph status
 lifebase topics
+lifebase conversations --limit 100
 lifebase search "替换成你关心的主题"
 lifebase context "替换成包含主题词的问题" --format json
 ```

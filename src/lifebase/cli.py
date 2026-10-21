@@ -73,6 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
     building.add_argument("--keywords-per-message", type=int, default=5)
     checking = actions.add_parser("status", help="检查 Gold 哈希、引用及是否过期")
     topics = commands.add_parser("topics", help="列出自动提取的关键词主题")
+    conversations = commands.add_parser("conversations", help="按最近活动列出会话元数据，不含正文")
     search = commands.add_parser("search", help="沿主题关系搜索有证据的消息")
     search.add_argument("text")
     timeline = commands.add_parser("timeline", help="按时间阅读会话与版本")
@@ -81,22 +82,25 @@ def build_parser() -> argparse.ArgumentParser:
     evidence.add_argument("evidence_id")
     context = commands.add_parser("context", help="准备供外部运行时消费的证据上下文")
     context.add_argument("question")
-    for command in (building, checking, topics, search, timeline, evidence, context):
+    for command in (building, checking, topics, conversations, search, timeline, evidence, context):
         command.add_argument("--data-dir", type=Path, default=argparse.SUPPRESS)
         command.add_argument("--format", choices=("text", "json"), default="text")
-    for command in (topics, search, timeline, evidence, context):
+    for command in (topics, conversations, search, timeline, evidence, context):
         command.add_argument("--destination", choices=("local", "cloud"), default="local")
-    for command in (topics, search, timeline, context):
+    for command in (topics, conversations, search, timeline, context):
         command.add_argument("--source")
         command.add_argument("--limit", type=int, default=10)
     for command in (search, timeline, context):
         command.add_argument("--role")
+    for command in (conversations, search, timeline, context):
         command.add_argument("--since", help="UTC 日期或带时区的时间戳，包含起点")
         command.add_argument("--until", help="UTC 日期或带时区的时间戳，不包含终点")
+    for command in (conversations, timeline):
+        command.add_argument("--offset", type=int, default=0, help="跳过前若干条，用于分页")
     return parser
 
 
-TOOL_COMMANDS = {"graph", "topics", "search", "timeline", "evidence", "context"}
+TOOL_COMMANDS = {"graph", "topics", "conversations", "search", "timeline", "evidence", "context"}
 
 
 def _run_tool(args: argparse.Namespace, data_dir: Path) -> ToolResult:
@@ -110,11 +114,14 @@ def _run_tool(args: argparse.Namespace, data_dir: Path) -> ToolResult:
         options = {"source": args.source, "limit": args.limit}
         if args.command == "topics":
             return service.topics(**options)
-        options.update(role=args.role, since=parse_time(args.since), until=parse_time(args.until))
+        options.update(since=parse_time(args.since), until=parse_time(args.until))
+        if args.command == "conversations":
+            return service.conversations(**options, offset=args.offset)
+        options["role"] = args.role
         if args.command == "search":
             return service.search(args.text, **options)
         if args.command == "timeline":
-            return service.timeline(args.conversation, **options)
+            return service.timeline(args.conversation, **options, offset=args.offset)
         return service.context(args.question, **options)
 
 

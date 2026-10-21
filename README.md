@@ -42,7 +42,8 @@ doubao@0.1.0 的三份本地导出包含 3 个会话、5,266 条消息、5,269 �
 和混合来源重放保持持久化文件不变。全部数据检查没有错误；合并仓库 verify 为 warning，
 仅因两个已有 Finder .DS_Store 文件。豆包会话时间、回复关系与覆盖范围仍有缺口。
 LifeGraph 的自动关键词图谱及 HumanOS 数据接口已实现：`graph build/status`、
-`topics`、`search`、`timeline`、`evidence`、`context`，支持可读终端和 JSON v1。
+`topics`、`conversations`、`search`、`timeline`、`evidence`、`context`，支持可读终端和 JSON v1；
+会话列表与 timeline 支持分页（[ADR-022](docs/adr/ADR-022-会话列表工具与分页.md)）。
 真实本地库的 128 个会话、11,148 条消息已构图；RAW/Silver/索引保持原状。
 HumanOS 准备证据上下文；DeepSeek Harness 插件已在合成库上联调云端模型的工具调用与引用回答，
 真实库经 ADR-021 批准可由云端模型回答（仅 DeepSeek 官方 API）。

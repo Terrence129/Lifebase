@@ -1,31 +1,35 @@
 # Harness 就绪接口 v1
 
-更新日期：2026-10-20。Lifebase 提供只读 JSON CLI；DeepSeek Harness fork 的 `lifebase-plugin/`
-已在合成库上联调，决策见 [ADR-020](adr/ADR-020-Harness联调与合成库云端放行.md)。
+更新日期：2026-10-21。Lifebase 提供只读 JSON CLI；DeepSeek Harness fork 的 `lifebase-plugin/`
+已在合成库上联调，决策见 [ADR-020](adr/ADR-020-Harness联调与合成库云端放行.md)；会话列表与分页见 [ADR-022](adr/ADR-022-会话列表工具与分页.md)。
 依赖方向见 [ADR-013](adr/ADR-013-Agent运行时集成边界.md)，图谱与工具行为见
 [ADR-016](adr/ADR-016-聊天图谱与Harness就绪接口.md)，项目约束见 [AGENTS.md](../AGENTS.md)。
 
 ## 调用方式
 
 运行时插件在 Harness fork 实现，直接运行 conda `lifebase` 环境里的 console script，
-用参数数组传参，不拼接 shell 命令。插件允许的操作是以下五项；管理命令由用户操作。
+用参数数组传参，不拼接 shell 命令。插件允许的操作是以下六项；管理命令由用户操作。
 
 | 操作 | CLI 参数 | data 内容 |
 | --- | --- | --- |
 | topics | `topics --format json` | topics：主题标签、身份、消息/会话/来源计数及 source_ids |
+| conversations | `conversations --format json` | total（会话数）、offset、next_offset、conversations |
 | search | `search QUERY --format json` | query、total（版本数）、matches |
-| timeline | `timeline --conversation RECORD_ID --format json` | conversation_id、total、matches |
+| timeline | `timeline --conversation RECORD_ID --format json` | conversation_id、total、offset、next_offset、matches |
 | evidence | `evidence EVIDENCE_ID --format json` | evidence 定位与 record 的元数据及有界 excerpt |
 | context | `context QUESTION --format json` | question、total、destination、content_chars、matches、generated_answer=null |
 
 共用 `--data-dir PATH`、`--destination local|cloud`，默认目的地 local；data-dir 可在命令前
-或后。topics/search/timeline/context 支持 `--source` 与 `--limit`（默认十条，上限一百）；
-context 上限为十条。search/timeline/context 还支持 `--role`、`--since`、`--until`。
+或后。topics/conversations/search/timeline/context 支持 `--source` 与 `--limit`（默认十条，上限一百）；
+context 上限为十条。conversations/search/timeline/context 支持 `--since`、`--until`，
+search/timeline/context 还支持 `--role`。conversations 与 timeline 支持 `--offset`（0–1,000,000），
+下一页使用上一页返回的 next_offset，没有下一页时为 null。
 查询和问题必须为非空文本，最多 4096 个字符。参数值按绑定参数进入查询。
 
 日期 `2026-01-01` 表示 UTC 零点；时间戳必须带时区。时间范围为 `[since, until)`，
 按 occurred_at 过滤；未知发生时间不参与范围命中，warnings 报告排除数量。
-无时间筛选时未知时间仍可返回；timeline 将其放在末尾。
+无时间筛选时未知时间仍可返回；timeline 将其放在末尾。conversations 的时间筛选选取范围内有消息的
+会话，含未知时间消息而未被选中的会话计入 UNKNOWN_TIME_EXCLUDED。
 
 ## JSON 契约
 
@@ -46,6 +50,18 @@ status 为 ok 或 empty；空结果是正常响应。正式外层及消息字段
 | graph_path | 来源、会话、消息版本、主题节点身份，对应图谱关系 |
 | evidence | Evidence 定位数组，保留所有已归档的处理出处 |
 | version_conflict | 同身份有多个内容版本，且 known_at 无法确定版本顺序 |
+
+| conversations 字段 | 含义 |
+| --- | --- |
+| conversation_id / source | 会话身份与来源 |
+| title / title_truncated | 标题最多八十个字符；是否截断。标题取 known_at 最新的版本 |
+| first_message_at / last_message_at | 带时间消息的最早与最晚 occurred_at；没有时为 null |
+| messages / user_messages | 按消息身份计数，不按内容版本计数 |
+| top_topics | 按 TF-IDF 权重之和取前五个统计关键词，不代表会话主旨 |
+| evidence_ids | 标题版本的证据 ID；完整定位用 `evidence` 读取 |
+| version_conflict | 标题有多个版本且 known_at 无法排序 |
+
+会话列表按最近消息时间倒序，不含消息正文。
 
 Evidence 定位包含 evidence_id、record_kind、record_id、revision_id、source、source_record_id、
 content_hash、raw_member、raw_member_hash、raw_pointer、collector_version、parser_version。
@@ -105,6 +121,6 @@ Harness 自带的 shell、文件、web、subagent 或 workflow 工具可以绕�
 零构建插件（`plugins/lifebase/`，见 [ADR-019](adr/ADR-019-只读插件的交付形态与目的地声明.md)），
 它没有独占 guard，目的地由配置声明；指向 Lifebase 数据时改用本节插件。
 
-消费方不获得 graph build、ingest、query 或 RAW 文件访问工具。**Defer**：会话列表工具、
-结论与证据的一致性检查、Web 引用卡片、模型回答的 Gold 保存、Agent 会话回采、
+消费方不获得 graph build、ingest、query 或 RAW 文件访问工具。**Defer**：按标题或语义搜索会话、
+会话摘要、search 分页、结论与证据的一致性检查、Web 引用卡片、模型回答的 Gold 保存、Agent 会话回采、
 自动上下文与 Past Me。

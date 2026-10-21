@@ -66,7 +66,7 @@
 <rect class="band" x="40" y="422" width="600" height="80" rx="12"/>
 <text class="th" x="56" y="452" dominant-baseline="central">HumanOS 接口</text>
 <text class="ts" x="56" y="472" dominant-baseline="central">humanos/ · 只读</text>
-<g class="tg"><rect class="teal" x="210" y="434" width="128" height="56" rx="8"/><text class="th" x="274" y="452" text-anchor="middle" dominant-baseline="central">只读工具 ×5</text><text class="ts" x="274" y="472" text-anchor="middle" dominant-baseline="central">search context…</text></g>
+<g class="tg"><rect class="teal" x="210" y="434" width="128" height="56" rx="8"/><text class="th" x="274" y="452" text-anchor="middle" dominant-baseline="central">只读工具 ×6</text><text class="ts" x="274" y="472" text-anchor="middle" dominant-baseline="central">conversations…</text></g>
 <g class="tg"><rect class="teal" x="353" y="434" width="128" height="56" rx="8"/><text class="th" x="417" y="452" text-anchor="middle" dominant-baseline="central">外发门禁</text><text class="ts" x="417" y="472" text-anchor="middle" dominant-baseline="central">按来源策略</text></g>
 <g class="tg"><rect class="teal" x="496" y="434" width="128" height="56" rx="8"/><text class="th" x="560" y="452" text-anchor="middle" dominant-baseline="central">JSON v1</text><text class="ts" x="560" y="472" text-anchor="middle" dominant-baseline="central">终端 / 机器可读</text></g>
 <line class="arr" x1="310" y1="502" x2="310" y2="530" marker-end="url(#a)"/>

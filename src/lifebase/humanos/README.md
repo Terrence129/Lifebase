@@ -1,6 +1,6 @@
 # HumanOS 数据接口
 
-提供 `topics`、`search`、`timeline`、`evidence` 和 `context`，默认可读终端输出，
+提供 `topics`、`conversations`、`search`、`timeline`、`evidence` 和 `context`，默认可读终端输出，
 也支持 api_version=1 的 JSON。接口保留消息角色、版本、时间、图谱路径和证据定位；
 上下文最多十条、每条三百字。当前没有模型生成回答。
 

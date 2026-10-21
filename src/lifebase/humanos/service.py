@@ -17,6 +17,7 @@ from lifebase.graph.records import node_id
 from lifebase.graph.store import load_graph
 from lifebase.humanos.policy import enforce_destination
 from lifebase.humanos.records import (
+    ConversationSummary,
     Destination,
     EvidenceLocator,
     GraphPath,
@@ -31,6 +32,14 @@ from lifebase.vault.query import read_connection
 def _limit(limit: int) -> None:
     if type(limit) is not int or not 1 <= limit <= 100:
         raise ToolError("INVALID_REQUEST", "limit 必须为 1–100")
+
+
+def _offset(offset: int) -> None:
+    if type(offset) is not int or not 0 <= offset <= 1_000_000:
+        raise ToolError("INVALID_REQUEST", "offset 必须为 0–1000000 的整数")
+
+
+TITLE_CHARS = 80
 
 
 def _text(value: str) -> None:
@@ -138,7 +147,7 @@ class HumanOS:
                             row["version_conflict"])
 
     def _result(self, tool: str, data: dict[str, Any], matches: list[MessageMatch],
-                omitted: int = 0, total: int | None = None) -> ToolResult:
+                omitted: int = 0, total: int | None = None, offset: int = 0) -> ToolResult:
         warnings = []
         if omitted:
             warnings.append(Warning("UNKNOWN_TIME_EXCLUDED", "未知发生时间未参与范围命中", omitted))
@@ -154,8 +163,9 @@ class HumanOS:
         ):
             if count:
                 warnings.append(Warning(code, message, count))
-        if total is not None and total > len(matches):
-            warnings.append(Warning("RESULTS_TRUNCATED", "命中数量超过本次输出上限", total - len(matches)))
+        if total is not None and total > offset + len(matches):
+            warnings.append(Warning("RESULTS_TRUNCATED", "命中数量超过本次输出上限",
+                                    total - offset - len(matches)))
         return ToolResult(tool, "ok" if matches else "empty", self.snapshot.snapshot_id,
                           data | {"matches": [asdict(match) for match in matches]}, tuple(warnings))
 
@@ -176,8 +186,10 @@ class HumanOS:
 
     def _messages(self, *, query: str | None, conversation: str | None, source: str | None,
                   role: str | None, since: datetime | None, until: datetime | None,
-                  limit: int, balance: bool = False) -> tuple[list[MessageMatch], int, int]:
+                  limit: int, balance: bool = False, offset: int = 0,
+                  ) -> tuple[list[MessageMatch], int, int]:
         _limit(limit)
+        _offset(offset)
         where, params, base, base_params = self._filters(source, role, since, until)
         prefix = ""
         leading: list[Any] = []
@@ -230,7 +242,8 @@ class HumanOS:
                               if (row["record_id"], row["revision_id"]) not in chosen]
             rows = rows[:limit]
         else:
-            rows = self._rows(prefix + selection + ordering + " LIMIT ?", leading + params + [limit])
+            rows = self._rows(prefix + selection + ordering + " LIMIT ? OFFSET ?",
+                              leading + params + [limit, offset])
         return [self._match(row) for row in rows], omitted, total
 
     def search(self, query: str, *, source: str | None = None, role: str | None = None,
@@ -242,11 +255,108 @@ class HumanOS:
 
     def timeline(self, conversation: str, *, source: str | None = None, role: str | None = None,
                  since: datetime | None = None, until: datetime | None = None,
-                 limit: int = 10) -> ToolResult:
+                 limit: int = 10, offset: int = 0) -> ToolResult:
         matches, omitted, total = self._messages(query=None, conversation=conversation, source=source,
-                                                role=role, since=since, until=until, limit=limit)
-        return self._result("timeline", {"conversation_id": conversation, "total": total},
-                            matches, omitted, total)
+                                                role=role, since=since, until=until, limit=limit,
+                                                offset=offset)
+        end = offset + len(matches)
+        return self._result("timeline", {"conversation_id": conversation, "total": total,
+                                         "offset": offset, "next_offset": end if end < total else None},
+                            matches, omitted, total, offset)
+
+    def conversations(self, *, source: str | None = None, since: datetime | None = None,
+                      until: datetime | None = None, limit: int = 10, offset: int = 0) -> ToolResult:
+        """按最近活动倒序列出会话元数据；时间筛选选取范围内有消息的会话。"""
+        _limit(limit)
+        _offset(offset)
+        self._filters(source, None, since, until)
+        scope, params = "c.kind='conversation'", []
+        if source is not None:
+            scope += " AND c.source=?"
+            params.append(source)
+        stats = (
+            "WITH m AS (SELECT a.context_record_id AS cid, a.record_id, a.role, a.occurred_at "
+            "FROM graph_nodes n JOIN artifacts a ON a.record_id=n.record_id "
+            "AND a.revision_id=n.revision_id WHERE n.kind='message'), "
+            "s AS (SELECT c.record_id AS cid, c.source, min(m.occurred_at) AS first_at, "
+            "max(m.occurred_at) AS last_at, count(DISTINCT m.record_id) AS messages, "
+            "count(DISTINCT m.record_id) FILTER (WHERE m.role='user') AS user_messages "
+            "FROM graph_nodes c LEFT JOIN m ON m.cid=c.record_id WHERE " + scope
+            + " GROUP BY c.record_id, c.source) ")
+        window, window_params = "TRUE", []
+        if since is not None or until is not None:
+            clauses = ["m.cid=s.cid"]
+            for operator, value in ((">=", since), ("<", until)):
+                if value is not None:
+                    clauses.append("m.occurred_at " + operator + " ?")
+                    window_params.append(value.astimezone(UTC))
+            window = "EXISTS (SELECT 1 FROM m WHERE " + " AND ".join(clauses) + ")"
+        total = self._rows(stats + "SELECT count(*) AS total FROM s WHERE " + window,
+                           params + window_params)[0]["total"]
+        omitted = 0
+        if window != "TRUE":
+            omitted = self._rows(
+                stats + "SELECT count(*) AS total FROM s WHERE NOT " + window
+                + " AND EXISTS (SELECT 1 FROM m WHERE m.cid=s.cid AND m.occurred_at IS NULL)",
+                params + window_params)[0]["total"]
+        rows = self._rows(stats + "SELECT * FROM s WHERE " + window
+                          + " ORDER BY last_at DESC NULLS LAST, cid LIMIT ? OFFSET ?",
+                          params + window_params + [limit, offset])
+        ids = [row["cid"] for row in rows]
+        topics: dict[str, list[str]] = {cid: [] for cid in ids}
+        conflicts: set[str] = set()
+        if ids:
+            marks = ",".join("?" for _ in ids)
+            for row in self._rows(
+                    "SELECT cid, label FROM (SELECT a.context_record_id AS cid, t.label, "
+                    "sum(e.weight) AS weight FROM graph_edges e "
+                    "JOIN graph_nodes t ON t.node_id=e.to_node JOIN graph_nodes n ON n.node_id=e.from_node "
+                    "JOIN artifacts a ON a.record_id=n.record_id AND a.revision_id=n.revision_id "
+                    "WHERE e.kind='mentions' AND a.context_record_id IN (" + marks + ") "
+                    "GROUP BY a.context_record_id, t.label) "
+                    "QUALIFY row_number() OVER (PARTITION BY cid ORDER BY weight DESC, label) <= 5 "
+                    "ORDER BY cid, weight DESC, label", ids):
+                topics[row["cid"]].append(row["label"])
+            conflicts = {row["record_id"] for row in self._rows(
+                "SELECT record_id FROM record_conflicts WHERE record_kind='event' "
+                "AND record_id IN (" + marks + ")", ids)}
+        revisions: dict[str, list[dict[str, Any]]] = {}
+        for event in self._data.events:
+            if event["record_id"] in topics:
+                revisions.setdefault(event["record_id"], []).append(event)
+        summaries = []
+        for row in rows:
+            cid = row["cid"]
+            # 标题取 known_at 最新的版本；known_at 缺失的版本排在最前，冲突另行标记。
+            event = max(revisions[cid], key=lambda item: (
+                item["known_at"] is not None, item["known_at"] or datetime.min.replace(tzinfo=UTC),
+                item["revision_id"]))
+            title = event["title"]
+            eids = self._data.references[("event", cid, event["revision_id"])]
+            summaries.append(ConversationSummary(
+                cid, row["source"], title[:TITLE_CHARS] if title is not None else None,
+                title is not None and len(title) > TITLE_CHARS, row["first_at"], row["last_at"],
+                row["messages"], row["user_messages"], tuple(topics[cid]), eids, cid in conflicts))
+        warnings = []
+        if not summaries:
+            warnings.append(Warning("INSUFFICIENT_EVIDENCE", "未找到符合筛选的会话"))
+        if omitted:
+            warnings.append(Warning("UNKNOWN_TIME_EXCLUDED", "含未知时间消息的会话未参与范围命中", omitted))
+        for code, message, count in (
+            ("UNKNOWN_TIME", "会话没有带时间的消息，未推测时间",
+             sum(item.last_message_at is None for item in summaries)),
+            ("VERSION_CONFLICT", "会话标题存在无法按 known_at 排序的版本",
+             sum(item.version_conflict for item in summaries)),
+        ):
+            if count:
+                warnings.append(Warning(code, message, count))
+        end = offset + len(summaries)
+        if total > end:
+            warnings.append(Warning("RESULTS_TRUNCATED", "会话数量超过本次输出上限，可用 offset 继续",
+                                    total - end))
+        return ToolResult("conversations", "ok" if summaries else "empty", self.snapshot.snapshot_id,
+                          {"total": total, "offset": offset, "next_offset": end if end < total else None,
+                           "conversations": [asdict(item) for item in summaries]}, tuple(warnings))
 
     def context(self, question: str, *, source: str | None = None, role: str | None = None,
                 since: datetime | None = None, until: datetime | None = None,

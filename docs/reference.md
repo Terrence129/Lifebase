@@ -27,7 +27,9 @@ pipeline 协调归档、Silver 发布与来源登记；实施边界见 [AGENTS.m
 更新日期：2026-10-21。Harness 联调首轮完成：DeepSeek Harness fork 的 Lifebase 插件以云端
 DeepSeek API 在合成库上走通工具调用与引用回答（[ADR-020](adr/ADR-020-Harness联调与合成库云端放行.md)）。
 2026-10-21 用户批准真实库使用云端模型：ChatGPT、豆包默认 `cloud_ok`，目的地仅限 DeepSeek 官方 API，
-见 [ADR-021](adr/ADR-021-聊天来源恢复云端可用与真实库试运行.md)；ruff 无告警，214 项 pytest 通过；真实库试运行尚未开始。
+见 [ADR-021](adr/ADR-021-聊天来源恢复云端可用与真实库试运行.md)；真实库已由用户在 Harness 中试运行一题。
+同日新增只读会话列表工具 `conversations` 与 timeline 分页，见 [ADR-022](adr/ADR-022-会话列表工具与分页.md)：ruff 无告警，
+223 项 pytest 与插件 17 项 `node --test` 通过；真实库 128 个会话两页列完，每 100 个会话约 5 万字符。
 接入方式见 [接口说明](harness-interface.md)。
 
 阶段历史：2026-10-06，ChatGPT 与豆包采集、Gold 关键词图谱、HumanOS 只读工具及独立
@@ -51,7 +53,8 @@ DeepSeek API 在合成库上走通工具调用与引用回答（[ADR-020](adr/AD
 
 - 引用 ID 存在不等于结论准确：模型自查发现一题中的来源归属与措辞错误；「虚构回忆」题
   标题结论过满。目前没有自动的结论—证据一致性检查。
-- 缺少会话列表入口，模型靠多次关键词枚举覆盖全库，单题最高约 136K token。
+- 会话列表已提供，模型是否改用它、单题 token 是否下降（此前最高约 136K）待在 Harness 中复测。
+  search 仍无分页。
 - 被 guard 拒绝的工具定义仍发送给模型；Harness 升级后需复测 guard。2026-10-21 fork 同步到
   上游 `0.2.1-rc.2` 后已复测：合成库 Profile 下 bash、read 被拒，`lifebase_search` 正常，插件测试 14 项通过。ADR-019 的插件没有
   guard，不能指向 Lifebase 数据。
@@ -64,7 +67,6 @@ DeepSeek API 在合成库上走通工具调用与引用回答（[ADR-020](adr/AD
 
 | 分类 | 当前待开展内容 | 完成条件 |
 | --- | --- | --- |
-| Build（Lifebase） | 只读会话列表工具 | 模型不再靠关键词枚举全库，评测题 token 用量下降 |
 | Build（Harness 插件） | 结论—证据一致性检查与 Web 引用卡片 | 自动标出引用不支持的结论 |
 | Build + Integrate | 模型回答的 Gold 断言保存 | 引用支持度稳定后，确定带输入证据与模型信息的保存格式 |
 | Reuse（restic、现有 collector） | 后续来源快照与独立备份恢复验收 | 根据实际输入和用户确定的备份目的地展开 |
