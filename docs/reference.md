@@ -21,20 +21,22 @@ pipeline 协调归档、Silver 发布与来源登记；实施边界见 [AGENTS.m
 
 ### 当前阶段
 
-更新日期：2026-10-20。Harness 联调首轮完成：DeepSeek Harness fork 的 Lifebase 插件以云端
-DeepSeek API 在合成库上走通工具调用与引用回答；真实库在 cloud 下继续拒绝。决策见
-[ADR-020](adr/ADR-020-Harness联调与合成库云端放行.md)，接入方式见 [接口说明](harness-interface.md)。
+更新日期：2026-10-21。Harness 联调首轮完成：DeepSeek Harness fork 的 Lifebase 插件以云端
+DeepSeek API 在合成库上走通工具调用与引用回答（[ADR-020](adr/ADR-020-Harness联调与合成库云端放行.md)）。
+2026-10-21 用户批准真实库使用云端模型：ChatGPT、豆包默认 `cloud_ok`，目的地仅限 DeepSeek 官方 API，
+见 [ADR-021](adr/ADR-021-聊天来源恢复云端可用与真实库试运行.md)；ruff 无告警，214 项 pytest 通过；真实库试运行尚未开始。
+接入方式见 [接口说明](harness-interface.md)。
 
 阶段历史：2026-10-06，ChatGPT 与豆包采集、Gold 关键词图谱、HumanOS 只读工具及独立
 私有数据仓库完成验收，见 ADR-006–010、ADR-014–017。2026-10-06–07，聊天来源曾放宽为
 `cloud_ok`（ADR-018），首个零构建插件在另一 fork 分支跑通（ADR-019）；两者的外发与目的地
-决策由 ADR-020 取代。真实库为 128 个会话、11,148 条消息；
+决策由 ADR-020 取代，聊天来源外发级别又由 ADR-021 恢复为 `cloud_ok`。真实库为 128 个会话、11,148 条消息；
 合成演示库为 3 个会话、8 条消息。数据仓库用法见 [数据仓库说明](data-repository.md)。
 
 联调验收（2026-10-20，macOS，DeepSeek-V41-Flash，合成库）：
 
-- 合成 fixture 哈希白名单放行合成库的 cloud 请求，snapshot_id 不变；真实库与混入非合成
-  输入的库仍返回 `EGRESS_BLOCKED`。Lifebase 全量校验：ruff 无告警，214 项 pytest 通过。
+- 合成 fixture 哈希白名单放行合成库的 cloud 请求，snapshot_id 不变；来源为 `local_only` 时，
+  非合成输入的库仍返回 `EGRESS_BLOCKED`（2026-10-20 验收时聊天来源为 `local_only`）。Lifebase 全量校验：ruff 无告警，214 项 pytest 通过。
 - 插件 13 项 `node --test` 通过，含参数注入、目的地判定与真实 CLI 调用。
 - 8 道合成评测题：查无证据时如实说明、区分用户原话与助手建议、来源与时间筛选、
   时间线还原、证据回查均通过。所有回答引用的 evidence_id 都出现在同一会话的
@@ -62,7 +64,7 @@ DeepSeek API 在合成库上走通工具调用与引用回答；真实库在 clo
 | Build（Harness 插件） | 结论—证据一致性检查与 Web 引用卡片 | 自动标出引用不支持的结论 |
 | Build + Integrate | 模型回答的 Gold 断言保存 | 引用支持度稳定后，确定带输入证据与模型信息的保存格式 |
 | Reuse（restic、现有 collector） | 后续来源快照与独立备份恢复验收 | 根据实际输入和用户确定的备份目的地展开 |
-| Defer | 真实库进入模型、本地模型路由、语义主题、Past Me、其他来源与自动采集 | 需另行决策；真实库外发须单独修订来源策略 |
+| Defer | 真实库进入模型、本地模型路由、语义主题、Past Me、其他来源与自动采集 | 需另行决策；新增来源的外发策略各自修订 |
 
 ## 3. 既定设计决策（未经用户同意，不得重新讨论）
 
@@ -74,7 +76,7 @@ DeepSeek API 在合成库上走通工具调用与引用回答；真实库在 clo
 - **采集方式优先级**：官方 API/OAuth > 官方导出 > 本地文件/数据库 > 现有开源提取器 > 用户触发的浏览器自动化 > 逆向。追求「可复现的采集」，不是「完美的采集」。
 - **存储栈**：本地文件系统 + 内容寻址对象存储 + Parquet + DuckDB + SQLite。PostgreSQL/pgvector 后期再引入；不为「可能以后需要」提前引入依赖。
 - **备份**：复用 restic，禁止自研加密/备份层。
-- **外发策略**：每个 collector 声明来源默认外发级别（`local_only` / `redact_before_cloud` / `cloud_ok`），HumanOS 按目的地声明执行；全部输入为仓库合成 fixture 的图谱可用于云端（ADR-012 / ADR-016 / ADR-020）。
+- **外发策略**：每个 collector 声明来源默认外发级别（`local_only` / `redact_before_cloud` / `cloud_ok`），HumanOS 按目的地声明执行；ChatGPT、豆包默认 `cloud_ok`，批准的云端目的地仅 DeepSeek 官方 API，全部输入为仓库合成 fixture 的图谱也可用于云端（ADR-012 / ADR-016 / ADR-020 / ADR-021）。
 - **Agent 运行时边界**：Agent 执行由外部运行时承担；Lifebase 不依赖任何运行时，只对外提供只读查询接口；AI 生成内容不作为关于用户现实生活的事实证据（ADR-013）。接入 Lifebase 数据的运行时 Profile 只运行 Lifebase 工具（ADR-020）。
 - **项目命名**：伞形名 **Lifebase**（包名 `lifebase`、CLI 命令 `lifebase`）；四层保留原名 LifeSync / LifeVault / LifeGraph / HumanOS，对应子包 `sync/` `vault/` `graph/` `humanos/`（ADR-002）。
 

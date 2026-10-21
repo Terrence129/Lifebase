@@ -30,7 +30,7 @@ LifeGraph 的自动关键词图谱及 HumanOS 数据接口已实现：`graph bui
 `topics`、`search`、`timeline`、`evidence`、`context`，支持可读终端和 JSON v1。
 真实本地库的 128 个会话、11,148 条消息已构图；RAW/Silver/索引保持原状。
 HumanOS 准备证据上下文；DeepSeek Harness 插件已在合成库上联调云端模型的工具调用与引用回答，
-真实库仍不进入模型（ADR-020）。
+真实库经 ADR-021 批准可由云端模型回答（仅 DeepSeek 官方 API）。
 完整验收、待验证事项与下一步见 [当前阶段](docs/reference.md#2-项目背景与当前阶段)，
 接入方式见 [Harness 接口说明](docs/harness-interface.md)。
 

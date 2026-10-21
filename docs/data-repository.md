@@ -49,4 +49,4 @@ README 恢复库权限并运行 validate。LFS 未 hydrate 的指针不是真实
 
 Git / LFS 是本次授权的同步方式。独立备份恢复、Harness、模型回答及真实外发验证
 继续等待后续阶段。迁移本身未改动来源策略；当前策略见
-[ADR-020](adr/ADR-020-Harness联调与合成库云端放行.md)：真实库保持 `local_only`。
+[ADR-021](adr/ADR-021-聊天来源恢复云端可用与真实库试运行.md)：聊天来源默认 `cloud_ok`。

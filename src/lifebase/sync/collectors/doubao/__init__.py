@@ -217,4 +217,4 @@ class DoubaoCollector:
     def metadata(self) -> dict[str, Any]:
         return {"name": "doubao", "source_type": "doubao", "sync_method": "export",
                 "collector_version": COLLECTOR_VERSION, "parser_version": PARSER_VERSION,
-                "egress_policy": "local_only"}
+                "egress_policy": "cloud_ok"}

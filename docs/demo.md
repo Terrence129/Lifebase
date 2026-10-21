@@ -82,8 +82,8 @@ lifebase_demo context "野餐" --destination cloud --format json
 lifebase context "野餐" --destination cloud --format json
 ```
 
-合成库的全部 RAW 输入都是仓库 fixture，第一条返回 ok。真实库的来源为 local_only，
-第二条预期退出码一、error.code=EGRESS_BLOCKED，不返回消息。接口不提供策略覆盖或脱敏选项。
+两条都预期返回 ok：聊天来源默认 cloud_ok（[ADR-021](adr/ADR-021-聊天来源恢复云端可用与真实库试运行.md)），合成库另有 fixture 哈希白名单。
+来源被降为 local_only 时，cloud 请求以退出码一、error.code=EGRESS_BLOCKED 拒绝，不返回消息。接口不提供策略覆盖或脱敏选项。
 
 ## 5. 完整性与更新
 
@@ -120,4 +120,4 @@ lifebase context "替换成包含主题词的问题" --format json
 ```
 
 如果 graph status 显示缺失或过期，先执行 `lifebase graph build`。输出仅在本地终端查看。
-真实库在 cloud 目的地下保持拒绝；Harness 联调只使用合成库。
+聊天来源默认 cloud_ok，真实库可在 cloud 目的地下使用（[ADR-021](adr/ADR-021-聊天来源恢复云端可用与真实库试运行.md)）。

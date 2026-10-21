@@ -287,17 +287,23 @@ def test_invalid_queries_and_literal_sql_input(mixed: Path) -> None:
             build_graph(mixed, keyword_count)
 
 
+def restrict(monkeypatch: pytest.MonkeyPatch, collector: Any, level: str = "local_only") -> None:
+    original = collector.metadata
+    monkeypatch.setattr(collector, "metadata", lambda self: original(self) | {"egress_policy": level})
+
+
 def test_destination_policy_and_filtered_cloud_request(mixed: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     build_graph(mixed)
     monkeypatch.setattr(policy, "SYNTHETIC_RAW_HASHES", {})
-    original = ChatGPTCollector.metadata
-    monkeypatch.setattr(ChatGPTCollector, "metadata", lambda self: original(self) | {"egress_policy": "cloud_ok"})
-    with pytest.raises(ToolError, match="受限来源"):
-        HumanOS(mixed, "cloud")
-    original_doubao = DoubaoCollector.metadata
-    monkeypatch.setattr(DoubaoCollector, "metadata", lambda self: original_doubao(self) | {"egress_policy": "cloud_ok"})
+    # ADR-021：聊天来源默认 cloud_ok，云端目的地直接可用。
     with HumanOS(mixed, "cloud") as service:
         assert service.context("野餐", source=CHATGPT).status == "ok"
+    # 任一来源降为 local_only，整份快照即拒绝云端；来源筛选不能绕过。
+    with monkeypatch.context() as patch:
+        restrict(patch, ChatGPTCollector)
+        with pytest.raises(ToolError, match="受限来源"):
+            HumanOS(mixed, "cloud")
+    original_doubao = DoubaoCollector.metadata
     monkeypatch.setattr(DoubaoCollector, "metadata", lambda self: original_doubao(self) | {"egress_policy": "redact_before_cloud"})
     with pytest.raises(ToolError):
         HumanOS(mixed, "cloud")
@@ -317,9 +323,9 @@ def test_legacy_source_uses_registered_type(tmp_path: Path, monkeypatch: pytest.
     with HumanOS(root) as service:
         assert service.search("野餐", source="synthetic-legacy-account").status == "ok"
     monkeypatch.setattr(policy, "SYNTHETIC_RAW_HASHES", {})
-    with pytest.raises(ToolError) as caught:
-        HumanOS(root, "cloud")
-    assert caught.value.code == "EGRESS_BLOCKED"
+    # 未加类型前缀的历史来源同样解析到已登记类型，云端目的地可用。
+    with HumanOS(root, "cloud") as service:
+        assert service.search("野餐", source="synthetic-legacy-account").status == "ok"
 
 
 def test_synthetic_allowlist_matches_fixture_files() -> None:
@@ -328,7 +334,10 @@ def test_synthetic_allowlist_matches_fixture_files() -> None:
 
 
 def test_cloud_allowed_only_when_every_raw_input_is_synthetic_fixture(
-        mixed: Path, tmp_path: Path) -> None:
+        mixed: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # 来源策略为 local_only 时，合成 fixture 白名单仍是唯一的云端放行通道。
+    restrict(monkeypatch, ChatGPTCollector)
+    restrict(monkeypatch, DoubaoCollector)
     build_graph(mixed)
     with HumanOS(mixed, "cloud") as service:
         assert service.context("野餐").status == "ok"
@@ -374,6 +383,7 @@ def test_json_cli_contract_readable_output_and_errors(mixed: Path, capsys: pytes
                  ("evidence", match["evidence"][0]["evidence_id"])):
         assert call(*args)[0] == 0
     monkeypatch.setattr(policy, "SYNTHETIC_RAW_HASHES", {})
+    restrict(monkeypatch, DoubaoCollector)
     code, value = call("context", "野餐", "--destination", "cloud", "--source", CHATGPT)
     assert code == 1 and value["error"]["code"] == "EGRESS_BLOCKED"
     assert "matches" not in value["data"]
